@@ -30,7 +30,7 @@ class GrammarBuilder:
         self.grammar_fst.set_start(1)
         self.unigram2state['<s>'] = 1
         self.disambig_symbol = '#0'
-        self.words_table = None
+        self.words_table = {}
 
     def arpa2fst(self, arpa_file):
         """
@@ -67,16 +67,19 @@ class GrammarBuilder:
                 raise NotImplementedError
         arpa.close()
 
-    def __call__(self, arpa_file, words_table):
+    def __call__(self, arpa_file, words_table_file):
         """functional callback
 
         Args:
             arpa_file: arpa file to be convert
-            words_table: words table from character to word id
+            words_table_file: words table file from word to id
         Return:
             grammar_fst: result wfst
         """
-        self.words_table = words_table
+        with open(words_table_file, 'r') as f:
+            for line in f:
+                word, idx = line.strip().split()
+                self.words_table[word] = int(idx)
         self.arpa2fst(arpa_file)
         self.remove_redundant_states()
         self.grammar_fst.arcsort(sort_type='ilabel')

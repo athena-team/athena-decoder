@@ -5,8 +5,8 @@ speller WFST using Compose algorithm
 """
 
 import openfst_python as fst
-from graph.grammar_builder import GrammarBuilder
-from graph.speller_builder import SpellerBuilder
+from grammar_builder import GrammarBuilder
+from speller_builder import SpellerBuilder
 from absl import logging
 
 class GraphBuilder:
@@ -18,18 +18,26 @@ class GraphBuilder:
         self.grammar_builder = GrammarBuilder()
         self.SG = None
 
-    def make_graph(self, speller_file, chars_file, arpa_file, fst_file='SG.fst'):
+    def make_graph(self, speller_file, chars_file, arpa_file,
+            disambig_chars_file='characters_disambig.txt',
+            words_file='words.txt', fst_file='SG.fst'):
         """build decode graph and write to disk
 
         Args:
             speller_file: speller file from word to character
             chars_file: character id file
             arpa_file: arpa language model file
+            disambig_chars_file: ouput characters table from character to id
+                isymbols_table for result WFST
+            words_file: output words table from word to id 
+                osymbols_table for result WFST
             fst_file: write result graph to fst_file, default: SG.fst
         """
         S = self.speller_builder(speller_file, chars_file)
+        self.speller_builder.write_words_table(words_file)
+        self.speller_builder.write_disambig_chars_table(disambig_chars_file)
         logging.info('make speller fst successfully')
-        G = self.grammar_builder(arpa_file, self.speller_builder.words_table)
+        G = self.grammar_builder(arpa_file, words_file)
         logging.info('make grammar fst successfully')
         SG = fst.compose(S, G)
         logging.info('fst compose successfully')
@@ -44,6 +52,7 @@ class GraphBuilder:
         logging.info('fst remove disambig  successfully')
         self.SG.arcsort(sort_type='ilabel')
         self.SG.write(fst_file)
+        return self.SG
 
     def remove_unk_arc(self):
         """Replace unk symbol with eps """

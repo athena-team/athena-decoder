@@ -206,6 +206,4 @@ class SpellerBuilder:
         self.create_words_table()
         self.create_disambig_chars_table(chars_file)
         self.make_speller_fst()
-        self.write_words_table()
-        self.write_disambig_chars_table()
         return self.speller_fst
