@@ -93,7 +93,6 @@ class WFSTDecoder:
 
         Args:
             initial_packed_states: initial packed states for callback function
-
         """
         self.cur_toks = {}
         self.prev_toks = {}

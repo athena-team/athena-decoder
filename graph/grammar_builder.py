@@ -1,12 +1,23 @@
-import math, re
+"""Transfer Arpa tri-gram language model to WFST format
+
+Python versioin arpa2fst scripts, Now only support trigram
+arpa language model
+"""
+
+import math
+import re
 from absl import logging
 import openfst_python as fst
 
-class GrammarBuilder:
-    '''GrammarBuilder
-    Builder for language model to WFST
-    '''
+def convert_weight(prob):
+    """Convert probility to weight in WFST"""
+    weight = -1.0 * math.log(10.0) * float(prob)
+    return weight
 
+class GrammarBuilder:
+    """GrammarBuilder
+    Builder class to transfer language model to WFST
+    """
     def __init__(self):
         self.unigram2state = {}
         self.bigram2state = {}
@@ -22,6 +33,12 @@ class GrammarBuilder:
         self.words_table = None
 
     def arpa2fst(self, arpa_file):
+        """
+        Parse arpa language model and build WFST
+
+        Args:
+            arpa_file: arpa file to be convert
+        """
         arpa = open(arpa_file, 'r')
         for line in arpa:
             line = line.strip()
@@ -51,26 +68,35 @@ class GrammarBuilder:
         arpa.close()
 
     def __call__(self, arpa_file, words_table):
+        """functional callback
+
+        Args:
+            arpa_file: arpa file to be convert
+            words_table: words table from character to word id
+        Return:
+            grammar_fst: result wfst
+        """
         self.words_table = words_table
         self.arpa2fst(arpa_file)
         self.remove_redundant_states()
         self.grammar_fst.arcsort(sort_type='ilabel')
         return self.grammar_fst
 
-    def convert_weight(self, prob):
-        weight = -1.0 * math.log(10.0) * float(prob)
-        return weight
-
     def sid(self, symbol):
+        """Wrapper for words table
+
+        """
         if symbol not in self.words_table:
             raise IndexError
         else:
             return self.words_table[symbol]
 
     def remove_redundant_states(self):
+        """ Remove states which only have one back off arc """
         for state in self.grammar_fst.states():
             if (self.grammar_fst.num_arcs(state) == 1
-                    and self.grammar_fst.final(state).to_string() == fst.Weight.Zero('tropical').to_string()):
+                    and self.grammar_fst.final(state).to_string() ==
+                    fst.Weight.Zero('tropical').to_string()):
                 aiter = self.grammar_fst.mutable_arcs(state)
                 while not aiter.done():
                     arc = aiter.value()
@@ -81,6 +107,7 @@ class GrammarBuilder:
         self.grammar_fst.rmepsilon()
 
     def process_unigram(self, gram):
+        """Process unigram in arpa file"""
         parts = re.split(r'\s+', gram)
         boff = '0.0'
         if len(parts) == 3:
@@ -91,8 +118,8 @@ class GrammarBuilder:
             raise NotImplementedError
         if word not in self.words_table:
             return
-        weight = self.convert_weight(prob)
-        boff = self.convert_weight(boff)
+        weight = convert_weight(prob)
+        boff = convert_weight(boff)
         if word == '</s>':
             src = self.unigram2state['<start>']
             self.grammar_fst.set_final(src, weight)
@@ -111,6 +138,7 @@ class GrammarBuilder:
             self.grammar_fst.add_arc(des, fst.Arc(self.sid('#0'), self.sid('<eps>'), boff, src))
 
     def process_bigram(self, gram):
+        """Process bigram in arpa file"""
         parts = re.split(r'\s+', gram)
         boff = '0.0'
         if len(parts) == 4:
@@ -119,11 +147,11 @@ class GrammarBuilder:
             prob, hist, word = parts
         else:
             raise NotImplementedError
-        if (hist not in self.words_table 
+        if (hist not in self.words_table
                 or word not in self.words_table):
             return
-        weight = self.convert_weight(prob)
-        boff = self.convert_weight(boff)
+        weight = convert_weight(prob)
+        boff = convert_weight(boff)
         if hist not in self.unigram2state:
             logging.info('[{} {} {}] skipped: no parent (n-1)-gram exists'.format(prob, hist, word))
             return
@@ -142,23 +170,26 @@ class GrammarBuilder:
                     boff_state = self.unigram2state[word]
                 else:
                     boff_state = self.unigram2state['<start>']
-                self.grammar_fst.add_arc(des, fst.Arc(self.sid('#0'), self.sid('<eps>'), boff, boff_state))
+                self.grammar_fst.add_arc(des, fst.Arc(self.sid('#0'),
+                    self.sid('<eps>'), boff, boff_state))
             self.grammar_fst.add_arc(src, fst.Arc(self.sid(word), self.sid(word), weight, des))
 
     def process_trigram(self, gram):
+        """Process trigram in arpa file"""
         prob, hist1, hist2, word = re.split(r'\s+', gram)
-        if (hist1 not in self.words_table 
-                or hist2 not in self.words_table 
+        if (hist1 not in self.words_table
+                or hist2 not in self.words_table
                 or word not in self.words_table):
             return
         boff = '0.0'
-        weight = self.convert_weight(prob)
-        boff = self.convert_weight(boff)
-        bigram1 = hist1 + '/' + hist2 
+        weight = convert_weight(prob)
+        boff = convert_weight(boff)
+        bigram1 = hist1 + '/' + hist2
         if bigram1 not in self.bigram2state:
-            logging.info('[{} {} {} {}] skipped: no parent (n-1)-gram exists'.format(prob, hist1, hist2, word))
+            logging.info('[{} {} {} {}] skipped: no parent (n-1)-gram exists'.format(prob,
+                hist1, hist2, word))
             return
-        bigram2 = hist2 + '/' + word 
+        bigram2 = hist2 + '/' + word
         src = self.bigram2state[bigram1]
         if word == '</s>':
             self.grammar_fst.set_final(src, weight)
@@ -172,5 +203,6 @@ class GrammarBuilder:
                     boff_state = self.unigram2state[word]
                 else:
                     boff_state = self.unigram2state['<start>']
-                self.grammar_fst.add_arc(des, fst.Arc(self.sid('#0'), self.sid('<eps>'), boff, boff_state))
+                self.grammar_fst.add_arc(des, fst.Arc(self.sid('#0'), 
+                    self.sid('<eps>'), boff, boff_state))
             self.grammar_fst.add_arc(src, fst.Arc(self.sid(word), self.sid(word), weight, des))
