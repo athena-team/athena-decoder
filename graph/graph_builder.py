@@ -5,8 +5,8 @@ speller WFST using Compose algorithm
 """
 
 import openfst_python as fst
-from grammar_builder import GrammarBuilder
-from speller_builder import SpellerBuilder
+from .grammar_builder import GrammarBuilder
+from .speller_builder import SpellerBuilder
 from absl import logging
 
 class GraphBuilder:

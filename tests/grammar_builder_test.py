@@ -2,7 +2,7 @@
 from unittest import TestCase, main
 from absl import logging
 import openfst_python as fst
-from grammar_builder import convert_weight, GrammarBuilder 
+from graph.grammar_builder import convert_weight, GrammarBuilder 
 
 class GrammarBuilderTestCase(TestCase):
     def test_convert_weight(self):
@@ -11,8 +11,8 @@ class GrammarBuilderTestCase(TestCase):
 
     def test_grammar_builder(self):
         grammar_builder = GrammarBuilder()
-        grammar_fst = grammar_builder('../egs/hkust/lm_hkust.arpa',
-                '../egs/hkust/words.txt')
+        grammar_fst = grammar_builder('egs/hkust/lm_hkust.arpa',
+                'egs/hkust/words.txt')
         self.assertNotEqual(-1, grammar_fst.start())
         self.assertNotEqual(0, grammar_fst.num_states())
         self.assertEqual('tropical', grammar_fst.weight_type())

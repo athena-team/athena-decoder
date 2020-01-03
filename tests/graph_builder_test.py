@@ -4,7 +4,7 @@ import os
 from tempfile import TemporaryDirectory
 from absl import logging
 import openfst_python as fst
-from graph_builder import GraphBuilder
+from graph.graph_builder import GraphBuilder
 
 class GraphBuilderTestCase(TestCase):
     def setUp(self):
@@ -13,9 +13,9 @@ class GraphBuilderTestCase(TestCase):
     def test_graph_builder(self):
         graph_builder = GraphBuilder()
         SG_fst = graph_builder.make_graph(
-                speller_file='../egs/hkust/speller.txt',
-                chars_file='../egs/hkust/characters.txt',
-                arpa_file='../egs/hkust/lm_hkust.arpa',
+                speller_file='egs/hkust/speller.txt',
+                chars_file='egs/hkust/characters.txt',
+                arpa_file='egs/hkust/lm_hkust.arpa',
                 disambig_chars_file=os.path.join(self.unittest_dir.name, 'unittest_disambig_characters.txt'),
                 words_file=os.path.join(self.unittest_dir.name, 'unittest_words.txt'),
                 fst_file=os.path.join(self.unittest_dir.name, 'unittest_SG.fst')
