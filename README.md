@@ -16,7 +16,7 @@ Our vision is to offer an universal, standard and user-friendly decoder tool for
 This project has only been tested on Python 3. We recommend creating a virtual environment and installing the python requirements there.
 
 ```bash
-git clone https://github.com/didichuxing/athena-decoder.git
+git clone https://github.com/athena-team/athena-decoder.git
 pip install -r requirements.txt
 python setup.py bdist_wheel sdist
 python -m pip install --ignore-installed dist/pydecoders-0.1.0*.whl
