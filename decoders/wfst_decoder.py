@@ -211,7 +211,7 @@ class WFSTDecoder:
                             queue.append(arc.nextstate)
 
     def get_cutoff(self):
-        """get cutoff used in next step
+        """get cutoff used in current and next step
 
         Returns:
             beam_cutoff: beam cutoff

@@ -1,5 +1,5 @@
 from absl import logging
-from decoders import WFSTDecoder
+from decoders import BeamSearchDecoder
 
 class ToyE2EModel:
     """Toy E2E Model with necessary interfaces
@@ -22,7 +22,7 @@ class ToyE2EModel:
         self.step = 0
         self.scores_per_step = []
         batch = []
-        with open('egs/hkust/wfst_scores.txt', 'r') as f:
+        with open('egs/hkust/beam_search_scores.txt', 'r') as f:
             for line in f:
                 items = line.strip().split()
                 if len(items) == 4:
@@ -64,13 +64,17 @@ if __name__ == '__main__':
     initial_packed_states = e2e_model.get_initial_packed_states()
     enc_outputs = e2e_model.get_encoder_outputs(input_feats)
     label_input = 3650
-    words_table = {}
-    with open('egs/hkust/graph/words.txt', 'r') as f:
+    vocab = {}
+    with open('egs/hkust/data/vocab', 'r') as f:
         for line in f:
             word, idx = line.strip().split()
-            words_table[int(idx)] = word
-    decoder = WFSTDecoder('egs/hkust/graph/SG.fst')
+            vocab[int(idx)] = word
+    decoder = BeamSearchDecoder()
     decoder.decode(enc_outputs, initial_packed_states, e2e_model.inference_one_step)
     trans_idx = decoder.get_best_path()
-    trans = ' '.join([words_table[int(idx)] for idx in trans_idx])
+    trans = ' '.join([vocab[int(idx)] for idx in trans_idx])
     logging.info("predictions: {}".format(trans))
+
+
+
+
