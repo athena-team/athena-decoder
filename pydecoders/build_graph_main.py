@@ -16,9 +16,9 @@ def main(input_speller_file, input_chars_file, input_arpa_file,
 
 if __name__ == '__main__':
     logging.set_verbosity(logging.INFO)
-    main('egs/hkust/graph/speller.txt',
-        'egs/hkust/graph/characters.txt',
-        'egs/hkust/graph/lm_hkust.arpa',
-        'egs/hkust/graph/characters_disambig.txt',
-        'egs/hkust/graph/words.txt',
-        'egs/hkust/graph/SG.fst')
+    main('examples/hkust/graph/speller.txt',
+        'examples/hkust/graph/characters.txt',
+        'examples/hkust/graph/lm_hkust.arpa',
+        'examples/hkust/graph/characters_disambig.txt',
+        'examples/hkust/graph/words.txt',
+        'examples/hkust/graph/SG.fst')
