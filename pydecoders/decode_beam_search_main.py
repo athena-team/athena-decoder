@@ -69,7 +69,10 @@ if __name__ == '__main__':
         for line in f:
             word, idx = line.strip().split()
             vocab[int(idx)] = word
-    decoder = BeamSearchDecoder()
+    # argmax decoder
+    decoder = BeamSearchDecoder(max_active=1)
+    # beam search decoder
+    #decoder = BeamSearchDecoder()
     decoder.decode(enc_outputs, initial_packed_states, e2e_model.inference_one_step)
     trans_idx = decoder.get_best_path()
     trans = ' '.join([vocab[int(idx)] for idx in trans_idx])

@@ -22,4 +22,24 @@ python setup.py bdist_wheel sdist
 python -m pip install --ignore-installed dist/pydecoders-0.1.0*.whl
 source ./tools/env.sh
 ```
+## Example
+1. WFST-based Decoder
+```bash
+# first build WFST graph,optional
+# or you can skip this build step and use graph in hkust/graph directly 
+python pydecoders/build_graph_main.py
+# run decode step
+python pydecoders/decode_wfst_main.py
+```
+2. Beam-Search decoder
+```batch
+# run beam search decoder 
+python pydecoders/decode_beam_search_main.py
+```
+3. ArgMax decoder
++ modify the max_active parameter to 1 in BeamSearch decoder
++ run BeamSearch decoder
+
+
+
 

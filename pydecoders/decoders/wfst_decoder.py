@@ -165,7 +165,7 @@ class WFSTDecoder:
                         next_weight_cutoff = new_weight + adaptive_beam
         for state, tok in self.prev_toks.items():
             seq_id = state2id[state]
-            if tok.cost < weight_cutoff:
+            if tok.cost <= weight_cutoff:
                 if self.eos == np.argmax(all_log_scores[seq_id]):
                     self.deal_completed_token(state, all_log_scores[seq_id][self.eos])
                     continue

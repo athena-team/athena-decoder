@@ -110,7 +110,7 @@ class BeamSearchDecoder:
                 cand_seqs, inner_packed_states_array)
 
         for idx, tok in enumerate(self.prev_toks):
-            if tok.cost < weight_cutoff:
+            if tok.cost <= weight_cutoff:
                 if self.eos == np.argmax(all_log_scores[idx]):
                     self.deal_completed_token(tok,all_log_scores[idx][self.eos])
                     continue
