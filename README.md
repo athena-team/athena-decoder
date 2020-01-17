@@ -40,6 +40,7 @@ python pydecoders/decode_beam_search_main.py
 + modify the max_active parameter to 1 in BeamSearch decoder
 + run BeamSearch decoder
 
+Please reference to build-graph.md and decoders.md in docs directory in detail.
 
 
 
