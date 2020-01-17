@@ -8,14 +8,13 @@ which uses [Openfst Python extension](http://www.openfst.org/twiki/bin/view/FST/
 The building steps and data-preparation scripts are reference to [Kaldi](http://kaldi-asr.org/).
 
 Three data file are necessary for decoding graph creation:
-    - character table file which contains all characters and corresponding index
-    - speller file which spell word to its character sequence
-    - language model in ARPA format
+- character table file which contains all characters and corresponding index
+- speller file which spell word to its character sequence
+- language model in ARPA format
 
 There will be three output file:
-    - new character table file contains disambiguation symbols and epsilon 
-    - word table file which contains all words and corresponding index
-     the decoding graph
+- new character table file contains disambiguation symbols and epsilon 
+- word table file which contains all words and corresponding index the decoding graph
 
 # Preparing character table file
 
@@ -104,17 +103,17 @@ G.write('G.fst')
 ```
 
 During buiding process, these operation have be done:
-    - skip the gram which contains the out-of-vocabulary words
-    - replace epsilons on the input side with the special disambiguation symbol #0
-    - sort the arc for every state in G according the input label index
+- skip the gram which contains the out-of-vocabulary words
+- replace epsilons on the input side with the special disambiguation symbol #0
+- sort the arc for every state in G according the input label index
 
 
 # Preparing decoding graph SG
 
 After Creating the speller graph S and grammar graph G, we could use WFST compose algorithm to build decoding graph SG. Then the decoding graph SG can be 
 optimized by determinization and minimization. Additional steps we have to do are as follows:
-    - remove the arc whose output label is unk
-    - replace all the disambiguation symbols with epsilon
+- remove the arc whose output label is unk
+- replace all the disambiguation symbols with epsilon
 
 ```
 SG = fst.compose(S, G)

@@ -23,9 +23,9 @@ decoding process. Actually if setting max_active parameter to 1, you get Arg-Max
 
 In order to minimize the interaction between the decoder and model, we design three operation. The signature
 of these operation is as flowing:
-    - encoder_outputs = get_encoder_outputs(input_feature)
-    - (initial_packed_states,...) = get_initial_packed_states()
-    - (batch_log_scores,batch_packed_states) = inference_one_step(encoder_outputs, current_input, current_packed_states)
+- encoder_outputs = get_encoder_outputs(input_feature)
+- (initial_packed_states,...) = get_initial_packed_states()
+- (batch_log_scores,batch_packed_states) = inference_one_step(encoder_outputs, current_input, current_packed_states)
 
 The structure of most Seq2Seq model is encoder-decoder. The output of encoder will be used many times while decoding.
 The function get_encoder_outputs receive input_feature and get encoder outputs. The encoder outputs should be an array
