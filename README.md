@@ -3,7 +3,7 @@
 
 *Athena-Decoder* is an open-source Automatic Speech Recognition (ASR) decoder tool implemented in python. 
 
-Our vision is to offer an universal, standard and user-friendly decoder tool for all kinds of model including but not limited to CTC, Attention-based model and Transformer
+Our vision is to offer an universal, standard and user-friendly decoder tool for all kinds of model including but not limited to CTC(#todo), Attention-based model and Transformer
 
 ## Key Features
 
