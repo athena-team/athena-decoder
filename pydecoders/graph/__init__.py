@@ -4,6 +4,8 @@ from . import graph_builder
 from . import token_builder
 from .grammar_builder import GrammarBuilder
 from .speller_builder import SpellerBuilder
-from .graph_builder import GraphBuilder
+from .speller_builder import LexiconBuilder
+from .graph_builder import SGGraphBuilder
+from .graph_builder import TLGGraphBuilder
 from .token_builder import TokenBuilder
 

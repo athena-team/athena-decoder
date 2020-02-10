@@ -140,7 +140,7 @@ class SpellerBuilder:
     def disambig_chars_table(self):
         return self.disambig_chars
 
-    def make_speller_fst(self, sil_prob=0.5, sil_symbol='<space>'):
+    def make_speller_fst(self, sil_symbol, sil_prob):
         """Convert speller to WFST format
         There is always a disambig symbols after sil_symbol
         the special disambig symbols have been added
@@ -187,7 +187,7 @@ class SpellerBuilder:
             self.words['#0'], 0.0, loop_state))
         self.speller_fst.arcsort(sort_type='olabel')
 
-    def __call__(self, speller_file, chars_file):
+    def __call__(self, speller_file, chars_file, sil_symbol, sil_prob=0.5):
         """ caller interface for build speller WFST
 
         Args:
@@ -205,5 +205,10 @@ class SpellerBuilder:
         self.add_disambig()
         self.create_words_table()
         self.create_disambig_chars_table(chars_file)
-        self.make_speller_fst()
+        self.make_speller_fst(sil_symbol, sil_prob)
         return self.speller_fst
+
+# Aliases 
+
+LexiconBuilder = SpellerBuilder
+
