@@ -1,6 +1,7 @@
 
 from collections import OrderedDict
 import openfst_python as fst
+from absl import logging
 
 class TokenBuilder:
     def __init__(self):
@@ -43,6 +44,7 @@ class TokenBuilder:
         self.read_disambig_tokens_table(disambig_token_file)
         if (blank not in self.token_table or
                 '<eps>' not in self.token_table):
+            logging.error('blank symbol or <eps> not exists')
             raise IndexError
         self.make_token_fst(blank)
         self.token_fst.arcsort(sort_type='olabel')
