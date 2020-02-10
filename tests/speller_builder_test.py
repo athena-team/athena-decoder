@@ -2,12 +2,13 @@
 from unittest import TestCase, main
 from absl import logging
 import openfst_python as fst
-from graph.speller_builder import SpellerBuilder 
+from pydecoders.graph.speller_builder import SpellerBuilder 
 
 class SpellerBuilderTestCase(TestCase):
     def test_speller_builder(self):
         speller_builder = SpellerBuilder()
-        speller_fst = speller_builder('egs/hkust/speller.txt', 'egs/hkust/characters.txt')
+        speller_fst = speller_builder('examples/hkust/graph/speller.txt',
+                'examples/hkust/graph/characters.txt', sil_symbol='<space>')
         disambig_chars_table = speller_builder.disambig_chars_table
         words_table = speller_builder.words_table
         disambig_ids = speller_builder.disambig_ids

@@ -4,18 +4,18 @@ import os
 from tempfile import TemporaryDirectory
 from absl import logging
 import openfst_python as fst
-from graph.graph_builder import GraphBuilder
+from pydecoders.graph.graph_builder import SGGraphBuilder
 
 class GraphBuilderTestCase(TestCase):
     def setUp(self):
         self.unittest_dir = TemporaryDirectory()
 
     def test_graph_builder(self):
-        graph_builder = GraphBuilder()
+        graph_builder = SGGraphBuilder()
         SG_fst = graph_builder.make_graph(
-                speller_file='egs/hkust/speller.txt',
-                chars_file='egs/hkust/characters.txt',
-                arpa_file='egs/hkust/lm_hkust.arpa',
+                speller_file='examples/hkust/graph/speller.txt',
+                chars_file='examples/hkust/graph/characters.txt',
+                arpa_file='examples/hkust/graph/lm_hkust.arpa',
                 disambig_chars_file=os.path.join(self.unittest_dir.name, 'unittest_disambig_characters.txt'),
                 words_file=os.path.join(self.unittest_dir.name, 'unittest_words.txt'),
                 fst_file=os.path.join(self.unittest_dir.name, 'unittest_SG.fst')
