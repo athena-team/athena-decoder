@@ -69,7 +69,7 @@ if __name__ == '__main__':
         for line in f:
             word, idx = line.strip().split()
             words_table[int(idx)] = word
-    decoder = WFSTDecoder('examples/hkust/graph/SG.fst')
+    decoder = WFSTDecoder('examples/hkust/graph/LG.fst')
     decoder.decode(enc_outputs, initial_packed_states, e2e_model.inference_one_step)
     trans_idx = decoder.get_best_path()
     trans = ' '.join([words_table[int(idx)] for idx in trans_idx])
