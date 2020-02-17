@@ -1,9 +1,24 @@
+""" Create WFST T for TLG graph
+
+Python version script
+Delete blank symbol and remove duplicates symbols
+"""
 
 from collections import OrderedDict
 import openfst_python as fst
 from absl import logging
 
 class TokenBuilder:
+    """
+    Token Builder
+
+    The function is deleting blank symbols and removing duplicate symbols.
+    That is necessary for CTC model.
+    For example, There is a symbol sequence:
+    'a a a <blk> b b <blk> b'
+    After the process of T, the output sequence would be:
+    'a b b'
+    """
     def __init__(self):
         self.token_fst = fst.Fst()
         self.graphemes_table = OrderedDict()
@@ -16,6 +31,9 @@ class TokenBuilder:
                 self.graphemes_table[items[0]] = int(items[1])
 
     def make_token_fst(self, blank):
+        """
+        make token fst and map disambiguation symbols to <eps>
+        """
         start_state = self.token_fst.add_state()
         blank_start = self.token_fst.add_state()
         blank_end = self.token_fst.add_state()
@@ -41,6 +59,13 @@ class TokenBuilder:
                 self.token_fst.add_arc(node, fst.Arc(0, 0, 0.0, blank_end))
 
     def __call__(self, disambig_graphemes_file, blank='<blk>'):
+        """ callable interface for token fst
+
+        Args:
+            disambig_graphemes_file:usually graphemes.txt
+            blank: blank symbol in graphemes.txt ,default <blk>
+
+        """
         self.read_disambig_graphemes_table(disambig_graphemes_file)
         logging.info('default blank symbol is <blk>, it must exist in graphemes.txt(usually the last symbol)')
         if (blank not in self.graphemes_table or

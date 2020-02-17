@@ -1,7 +1,6 @@
 """Convert lexicon file to WFST format
 
 Python version script
-Speller file plays lexicon role in seq2seq ASR
 lexicon maps words to monophone or context-dependent phone
 However, in seq2seq ASR we map words to graphemes just
 like spell the words, we call it lexicon file
