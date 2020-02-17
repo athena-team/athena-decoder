@@ -19,7 +19,7 @@ There will be three output file:
 
 # Preparing grapheme table file
 
-We need to prepare the OpenFst input symbol table from "grapheme.txt". The table assigns integer index to all the characters in system. Actually, the "grapheme.txt" file is the same as the vocab file used in Seq2Seq model. 
+We need to prepare the OpenFst input symbol table from "grapheme.txt". The table assigns integer index to all the graphemes in system. Actually, the "grapheme.txt" file is the same as the vocab file used in Seq2Seq model. 
 
 If the grapheme is character in Chinese, the example of how the grapheme table file looks like:
 
@@ -77,6 +77,7 @@ z 3649
 #0 3651
 #1 3652
 #2 3653
+......
 ```
 When building the "TLG" type graph for CTC model and the grapheme is syllables, the "graphemes.txt" and "graphemes_disambig.txt" files look like:
 
@@ -197,7 +198,7 @@ If the grapheme is syllable, the lexicon looks like:
 According to the grapheme table file and lexicon file, the word table file (words.txt) and disambiguation grapheme file (graphemes_disambig.txt) will be produced.
 
 ```
-head words.txt
+## head words.txt
 <eps> 0
 <unk> 1
 一丝不挂 2
@@ -209,7 +210,7 @@ head words.txt
 一凡 8
 一前一后 9
 
-tail words.txt
+## tail words.txt
 龙南 3470
 龙宝 3471
 龙桥 3472
@@ -264,11 +265,12 @@ For example, There is a symbol sequence:
 ```
 a a a <blk> b b <blk> b <blk>
 ```
-After the process of T, the input sequence would be:
+After the process of T, the output sequence would be:
 ```
 a b b
 ```
-When building the T, we will map disambiguation symbols and blank symbol to epsilon.
+When building the T, we will map disambiguation symbols and blank symbol to epsilon. So There is no need to 
+remove disambiguation symbols for "TLG" graph.
 
 
 
@@ -276,6 +278,7 @@ When building the T, we will map disambiguation symbols and blank symbol to epsi
 
 Eventually, we could build the decoding graph for CTC model by the Openfst composition algorithm.
 Then we could  optimize the graph using determinization and minimization algorithm.
+
 In summary, the creation of decoding graph would be:
 
 ```
