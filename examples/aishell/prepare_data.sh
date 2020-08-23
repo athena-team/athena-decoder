@@ -19,6 +19,7 @@ awk '{print $1}' data/resource_aishell/lexicon.txt | grep -v "SPOKEN_NOISE\|SIL"
 
 sed -i '1i <unk> <unk>' graph/lexicon.txt
 (cd graph && ln -sf ../data/vocab graphemes.txt)
+(cd graph && ln -sf ../data/aishell.arpa lm.arpa)
 python local/filter_lexicon.py graph/lexicon.txt graph/graphemes.txt > graph/lexicon_filter.txt
 mv graph/lexicon_filter.txt graph/lexicon.txt
 

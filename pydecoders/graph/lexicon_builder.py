@@ -20,6 +20,8 @@ class LexiconBuilder:
         self.words = OrderedDict()
         self.max_disambig = 0
         self.lexicon_fst = fst.Fst()
+        self.start = 0
+        self.last_s = 2
 
     def add_disambig(self):
         """add disambig symbols to lexicon items when necessary"""
@@ -153,19 +155,22 @@ class LexiconBuilder:
         sil_cost = -1.0 * math.log(sil_prob)
         no_sil_cost = -1.0 * math.log(1.0 - sil_prob)
         sil_disambig_id = self.disambig_graphemes['#' + str(self.max_disambig)]
+        
         start_state = self.lexicon_fst.add_state()
         loop_state = self.lexicon_fst.add_state()
         sil_state = self.lexicon_fst.add_state()
         disambig_state = self.lexicon_fst.add_state()
         self.lexicon_fst.set_start(start_state)
+        
         self.lexicon_fst.add_arc(start_state, fst.Arc(self.disambig_graphemes['<eps>'],
             self.words['<eps>'], no_sil_cost, loop_state))
-        self.lexicon_fst.add_arc(start_state, fst.Arc(self.disambig_graphemes[sil_symbol],
-            self.words['<eps>'], sil_cost, disambig_state))
+        self.lexicon_fst.add_arc(start_state, fst.Arc(self.disambig_graphemes['<eps>'],
+            self.words['<eps>'], sil_cost, sil_state))
         self.lexicon_fst.add_arc(sil_state, fst.Arc(self.disambig_graphemes[sil_symbol],
             self.words['<eps>'], 0.0, disambig_state))
         self.lexicon_fst.add_arc(disambig_state, fst.Arc(sil_disambig_id,
             self.words['<eps>'], 0.0, loop_state))
+        
         for word, grapheme_seq in self.lexicons:
             word_id = self.words[word]
             grapheme_id_seq = [self.disambig_graphemes[grapheme] for grapheme in grapheme_seq]
@@ -179,8 +184,12 @@ class LexiconBuilder:
                     self.lexicon_fst.add_arc(src, fst.Arc(grapheme_id, eps_id, 0.0, des))
                 src = des
             last_grapheme_id = grapheme_id_seq[-1]
-            self.lexicon_fst.add_arc(src, fst.Arc(last_grapheme_id, eps_id, no_sil_cost, loop_state))
-            self.lexicon_fst.add_arc(src, fst.Arc(last_grapheme_id, eps_id, sil_cost, sil_state))
+            if len(grapheme_id_seq) == 1:
+                self.lexicon_fst.add_arc(src, fst.Arc(last_grapheme_id, word_id, no_sil_cost, loop_state))
+                self.lexicon_fst.add_arc(src, fst.Arc(last_grapheme_id, word_id, sil_cost, sil_state))
+            else:
+                self.lexicon_fst.add_arc(src, fst.Arc(last_grapheme_id, eps_id, no_sil_cost, loop_state))
+                self.lexicon_fst.add_arc(src, fst.Arc(last_grapheme_id, eps_id, sil_cost, sil_state))
         self.lexicon_fst.set_final(loop_state, 0.0)
         self.lexicon_fst.add_arc(loop_state, fst.Arc(self.disambig_graphemes['#0'],
             self.words['#0'], 0.0, loop_state))

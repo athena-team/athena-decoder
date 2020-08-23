@@ -19,16 +19,30 @@ class GrammarBuilder:
     Builder class to transfer language model to WFST
     """
     def __init__(self):
-        self.unigram2state = {}
-        self.bigram2state = {}
+        #self.unigram2state = {}
+        #self.bigram2state = {}
+        self.gram2state = {}
+
+
         self.grammar_fst = fst.Fst()
         self.order = 0
+
         self.grammar_fst.add_state()
         self.grammar_fst.set_start(0)
-        self.unigram2state['<start>'] = 0
+        self.gram2state['<start>'] = 0
+
         self.grammar_fst.add_state()
         self.grammar_fst.set_start(1)
-        self.unigram2state['<s>'] = 1
+        self.gram2state['<s>'] = 1
+
+        self.grammar_fst.add_state()
+        self.gram2state['</s>'] = 2
+
+        self.grammar_fst.set_final(2, convert_weight(0.0))
+
+        self.grammar_fst.add_state()
+        self.gram2state['<eps>'] = 3
+
         self.disambig_symbol = '#0'
         self.words_table = {}
 
@@ -108,6 +122,12 @@ class GrammarBuilder:
                         aiter.set_value(arc)
                     aiter.next()
         self.grammar_fst.rmepsilon()
+        self.grammar_fst.connect()
+
+    def find_state_of(self, gram):
+        if gram not in self.gram2state:
+            self.gram2state[gram] = self.grammar_fst.add_state()
+        return self.gram2state[gram]
 
     def process_unigram(self, gram):
         """Process unigram in arpa file"""
@@ -120,25 +140,24 @@ class GrammarBuilder:
         else:
             raise NotImplementedError
         if word not in self.words_table:
+            logging.debug('[{} {} {}] skipped: not in word table'.format(prob, word,boff))
             return
         weight = convert_weight(prob)
         boff = convert_weight(boff)
+
         if word == '</s>':
-            src = self.unigram2state['<start>']
-            self.grammar_fst.set_final(src, weight)
+            src = self.find_state_of('<eps>')
+            des = self.find_state_of('</s>')
+            self.grammar_fst.add_arc(src, fst.Arc(self.sid('#0'), self.sid('<eps>'), weight, des))
         elif word == '<s>':
-            src = self.unigram2state['<s>']
-            des = self.unigram2state['<start>']
+            src = self.find_state_of('<s>')
+            des = self.find_state_of('<eps>')
             self.grammar_fst.add_arc(src, fst.Arc(self.sid('#0'), self.sid('<eps>'), boff, des))
         else:
-            src = self.unigram2state['<start>']
-            if word in self.unigram2state:
-                des = self.unigram2state[word]
-            else:
-                des = self.grammar_fst.add_state()
-                self.unigram2state[word] = des
-            self.grammar_fst.add_arc(src, fst.Arc(self.sid(word), self.sid(word), weight, des))
-            self.grammar_fst.add_arc(des, fst.Arc(self.sid('#0'), self.sid('<eps>'), boff, src))
+            src = self.find_state_of(word)
+            des = self.gram2state['<eps>']
+            self.grammar_fst.add_arc(src, fst.Arc(self.sid('#0'), self.sid('<eps>'), boff, des))
+            self.grammar_fst.add_arc(des, fst.Arc(self.sid(word), self.sid(word), weight, src))
 
     def process_bigram(self, gram):
         """Process bigram in arpa file"""
@@ -152,30 +171,22 @@ class GrammarBuilder:
             raise NotImplementedError
         if (hist not in self.words_table
                 or word not in self.words_table):
+            logging.debug('[{} {} {}] skipped: not in word table'.format(prob, hist, word))
             return
         weight = convert_weight(prob)
         boff = convert_weight(boff)
-        if hist not in self.unigram2state:
+        if hist not in self.gram2state:
             logging.info('[{} {} {}] skipped: no parent (n-1)-gram exists'.format(prob, hist, word))
             return
         if word == '</s>':
-            src = self.unigram2state[hist]
-            self.grammar_fst.set_final(src, weight)
+            src = self.find_state_of(hist)
+            des = self.find_state_of(word)
+            self.grammar_fst.add_arc(src, fst.Arc(self.sid('#0'), self.sid('<eps>'), weight, des))
         else:
-            src = self.unigram2state[hist]
             bigram = hist + '/' + word
-            if bigram in self.bigram2state:
-                des = self.bigram2state[bigram]
-            else:
-                des = self.grammar_fst.add_state()
-                self.bigram2state[bigram] = des
-                if word in self.unigram2state:
-                    boff_state = self.unigram2state[word]
-                else:
-                    boff_state = self.unigram2state['<start>']
-                self.grammar_fst.add_arc(des, fst.Arc(self.sid('#0'),
-                    self.sid('<eps>'), boff, boff_state))
-            self.grammar_fst.add_arc(src, fst.Arc(self.sid(word), self.sid(word), weight, des))
+            src = self.find_state_of(bigram)
+            self.grammar_fst.add_arc(src, fst.Arc(self.sid('#0'), self.sid("<eps>"), boff, self.find_state_of(word)))
+            self.grammar_fst.add_arc(self.find_state_of(hist), fst.Arc(self.sid(word), self.sid(word), weight, src))
 
     def process_trigram(self, gram):
         """Process trigram in arpa file"""
@@ -183,29 +194,21 @@ class GrammarBuilder:
         if (hist1 not in self.words_table
                 or hist2 not in self.words_table
                 or word not in self.words_table):
+            logging.debug('[{} {} {} {}] skipped: not in word table'.format(prob, hist1, hist2, word))
             return
         boff = '0.0'
         weight = convert_weight(prob)
         boff = convert_weight(boff)
         bigram1 = hist1 + '/' + hist2
-        if bigram1 not in self.bigram2state:
+        if bigram1 not in self.gram2state:
             logging.info('[{} {} {} {}] skipped: no parent (n-1)-gram exists'.format(prob,
                 hist1, hist2, word))
             return
         bigram2 = hist2 + '/' + word
-        src = self.bigram2state[bigram1]
         if word == '</s>':
-            self.grammar_fst.set_final(src, weight)
+            src = self.find_state_of(bigram1)
+            self.grammar_fst.add_arc(src, fst.Arc(self.sid('#0'), self.sid('<eps>'), weight, self.find_state_of(word)))
         else:
-            if bigram2 in self.bigram2state:
-                des = self.bigram2state[bigram2]
-            else:
-                des = self.grammar_fst.add_state()
-                self.bigram2state[bigram2] = des
-                if word in self.unigram2state:
-                    boff_state = self.unigram2state[word]
-                else:
-                    boff_state = self.unigram2state['<start>']
-                self.grammar_fst.add_arc(des, fst.Arc(self.sid('#0'), 
-                    self.sid('<eps>'), boff, boff_state))
+            src = self.find_state_of(bigram1)
+            des = self.find_state_of(bigram2)
             self.grammar_fst.add_arc(src, fst.Arc(self.sid(word), self.sid(word), weight, des))
