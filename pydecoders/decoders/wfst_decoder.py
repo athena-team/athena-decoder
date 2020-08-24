@@ -39,9 +39,8 @@ class Token:
 
 class WFSTDecoder:
     """Decode the input samples using seq2seq models and WFST graph"""
-    def __init__(self, fst_path, acoustic_scale=20.0,
-            max_active=30, min_active=0, beam=30.0,
-            sos=3650, eos=3650, max_seq_len=100):
+    def __init__(self, fst_path, sos, eos, acoustic_scale=20.0,
+            max_active=30, min_active=0, beam=30.0, max_seq_len=100):
         """Init decoder set some inner variance.
 
         Args:

@@ -29,10 +29,10 @@ if __name__ == '__main__':
     config = None
     with open(json_file) as f:
         config = json.load(f)
-    build_graph(config['graph_type'],
-            config['input_lexicon_file'],
-            config['input_graphemes_file'],
-            config['input_grammar_file'],
-            config['output_disambig_graphemes_file'],
-            config['output_words_file'],
-            config['output_graph_file'])
+    build_graph(config['graph']['graph_type'],
+            config['graph']['input_lexicon_file'],
+            config['graph']['input_graphemes_file'],
+            config['graph']['input_grammar_file'],
+            config['graph']['output_disambig_graphemes_file'],
+            config['graph']['output_words_file'],
+            config['graph']['output_graph_file'])

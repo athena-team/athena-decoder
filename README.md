@@ -32,7 +32,7 @@ python pydecoders/build_graph_main.py examples/hkust/conf/hkust.conf
 # prepare data
 cd examples/aishell && ./prepare_data.sh
 # build graph
-python pydecoders/build_graph_main.py examples/aishell/conf/aishell
+python pydecoders/build_graph_main.py examples/aishell/conf/aishell.conf
 ```
 
 
@@ -43,12 +43,12 @@ python pydecoders/build_graph_main.py examples/aishell/conf/aishell
 # or you can skip this build step and use graph in hkust/graph directly 
 python pydecoders/build_graph_main.py
 # run decode step
-python pydecoders/decode_wfst_main.py
+python pydecoders/decode_wfst_main.py examples/hkust/conf/hkust.conf
 ```
 2. Beam-Search decoder
-```batch
+```bash
 # run beam search decoder 
-python pydecoders/decode_beam_search_main.py
+python pydecoders/decode_beam_search_main.py examples/hkust/conf/hkust.conf
 ```
 3. ArgMax decoder
 + modify the max_active parameter to 1 in BeamSearch decoder

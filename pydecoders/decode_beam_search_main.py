@@ -1,3 +1,5 @@
+import sys
+import json
 from absl import logging
 from decoders import BeamSearchDecoder
 
@@ -17,12 +19,12 @@ class ToyE2EModel:
             all the output labels; Additionally, the function should return the new inner
             information for next inference step.
     """
-    def __init__(self):
+    def __init__(self, config):
         """Read  scores from file obtained in advance for this toy model"""
         self.step = 0
         self.scores_per_step = []
         batch = []
-        with open('examples/hkust/beam_search_scores.txt', 'r') as f:
+        with open(config['beamsearch_decoder']['am'], 'r') as f:
             for line in f:
                 items = line.strip().split()
                 if len(items) == 4:
@@ -59,20 +61,26 @@ class ToyE2EModel:
 if __name__ == '__main__':
 
     logging.set_verbosity(logging.INFO)
-    e2e_model = ToyE2EModel()
+    if len(sys.argv) < 2:
+        logging.warning('Usage: python {} config_json_file'.format(sys.argv[0]))
+        sys.exit()
+    json_file = sys.argv[1]
+    config = None
+    with open(json_file) as f:
+        config = json.load(f)
+
+    e2e_model = ToyE2EModel(config)
     input_feats = [0.0 for _ in range(100)]
     initial_packed_states = e2e_model.get_initial_packed_states()
     enc_outputs = e2e_model.get_encoder_outputs(input_feats)
-    label_input = 3650
     vocab = {}
-    with open('examples/hkust/data/vocab', 'r') as f:
+    with open(config['beamsearch_decoder']['words_file'], 'r') as f:
         for line in f:
             word, idx = line.strip().split()
             vocab[int(idx)] = word
-    # argmax decoder
-    decoder = BeamSearchDecoder(max_active=1)
-    # beam search decoder
-    #decoder = BeamSearchDecoder()
+    decoder = BeamSearchDecoder(sos=config['beamsearch_decoder']['sos'],
+            eos=config['beamsearch_decoder']['eos'],
+            max_active=config['beamsearch_decoder']['max_active'])
     decoder.decode(enc_outputs, initial_packed_states, e2e_model.inference_one_step)
     trans_idx = decoder.get_best_path()
     trans = ' '.join([vocab[int(idx)] for idx in trans_idx])

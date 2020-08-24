@@ -26,8 +26,8 @@ class Token:
 
 class BeamSearchDecoder:
     """Beam search decoder for seq2seq models"""
-    def __init__(self, max_active=4, min_active=0, beam=30.0,
-            sos=3650, eos=3650, max_seq_len=100, max_active_local=4):
+    def __init__(self, sos, eos, max_active=4, min_active=0, beam=30.0,
+            max_seq_len=100, max_active_local=4):
         """Init decoder
 
         Args:
