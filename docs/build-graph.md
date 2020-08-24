@@ -226,8 +226,7 @@ According to the grapheme table file and lexicon file, the word table file (word
 
 # Preparing the grammar G
 
-The most part of grammar G is an acceptor with words as its symbols. The exception is the disambiguation symbol #0 which only apperas on the input side. Note
-that we only support 3gram language model for now. 
+The most part of grammar G is an acceptor with words as its symbols. The exception is the disambiguation symbol #0 which only apperas on the input side. 
 We use the word table file generated when creating speller file and language model to build grammar G. 
 
 ```
