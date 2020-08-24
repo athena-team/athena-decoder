@@ -22,18 +22,11 @@ class GrammarBuilder:
         self.sb = sb
         self.se = se
         self.disambig_symbol = ds
-
+        
         self.grammar_fst.add_state()
+        self.gram2state[self.eps] = 0
         self.grammar_fst.set_start(0)
-        self.gram2state['<start>'] = 0
-        self.grammar_fst.add_state()
-        self.grammar_fst.set_start(1)
-        self.gram2state[self.sb] = 1
-        self.grammar_fst.add_state()
-        self.gram2state[self.se] = 2
-        self.grammar_fst.set_final(2, self.to_tropical(0.0))
-        self.grammar_fst.add_state()
-        self.gram2state[self.eps] = 3
+
         self.words_table = {}
         self.max_order = 0
 
@@ -49,10 +42,6 @@ class GrammarBuilder:
         Args:
             arpa_file: arpa file to be convert
         """
-
-        src = self.find_state_of('<start>')
-        des = self.find_state_of(self.sb)
-        self.grammar_fst.add_arc(src,self.make_arc(self.disambig_symbol, self.eps, 0.0, des))
         arpa = open(arpa_file, 'r')
         for line in arpa:
             line = line.strip()
@@ -99,7 +88,6 @@ class GrammarBuilder:
                 word, idx = line.strip().split()
                 self.words_table[word] = int(idx)
         self.arpa2fst(arpa_file)
-        self.remove_redundant_states()
         self.grammar_fst.arcsort(sort_type='ilabel')
         return self.grammar_fst
 
@@ -111,22 +99,6 @@ class GrammarBuilder:
             raise IndexError
         else:
             return self.words_table[symbol]
-
-    def remove_redundant_states(self):
-        """ Remove states which only have one back off arc """
-        for state in self.grammar_fst.states():
-            if (self.grammar_fst.num_arcs(state) == 1
-                    and self.grammar_fst.final(state).to_string() ==
-                    fst.Weight.Zero('tropical').to_string()):
-                aiter = self.grammar_fst.mutable_arcs(state)
-                while not aiter.done():
-                    arc = aiter.value()
-                    if arc.ilabel == self.sid(self.disambig_symbol):
-                        arc.ilabel = self.sid(self.eps)
-                        aiter.set_value(arc)
-                    aiter.next()
-        self.grammar_fst.rmepsilon()
-        self.grammar_fst.connect()
 
     def find_state_of(self, gram):
         """ The map from gram to state """
@@ -157,12 +129,10 @@ class GrammarBuilder:
             self.grammar_fst.add_arc(src, self.make_arc(word, word, prob, des))
         elif word == self.se:
             src = self.find_state_of(self.eps)
-            des = self.find_state_of(self.se)
-            self.grammar_fst.add_arc(src, self.make_arc(self.disambig_symbol, self.eps, prob, des))
+            self.grammar_fst.set_final(src, self.to_tropical(prob))
+
         elif word == self.sb:
-            src = self.find_state_of(self.sb)
-            des = self.find_state_of(self.eps)
-            self.grammar_fst.add_arc(src, self.make_arc(self.disambig_symbol, self.eps, boff, des))
+            pass
         else:
             src = self.find_state_of(word)
             des = self.find_state_of(self.eps)
@@ -178,8 +148,7 @@ class GrammarBuilder:
                 return
         if parts[self.order] == self.se:
             src = self.find_state_of('/'.join(parts[1:self.order]))
-            des = self.find_state_of(parts[self.order])
-            self.grammar_fst.add_arc(src, self.make_arc(self.disambig_symbol, self.eps, parts[0], des))
+            self.grammar_fst.set_final(src, self.to_tropical(parts[0]))
         else:
             boff = "0.0"
             if len(parts) == self.order+2:
@@ -204,8 +173,8 @@ class GrammarBuilder:
         prob = parts[0]
         if parts[self.order] == self.se:
             src = self.find_state_of('/'.join(parts[1:self.order]))
-            des = self.find_state_of(parts[self.order])
-            self.grammar_fst.add_arc(src, self.make_arc(self.disambig_symbol, self.eps, prob, des))
+            self.grammar_fst.set_final(src, self.to_tropical(prob))
+
         else:
             src = self.find_state_of('/'.join(parts[1:self.order]))
             des = self.find_state_of('/'.join(parts[2:self.order+1]))

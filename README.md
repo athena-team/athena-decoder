@@ -22,7 +22,21 @@ python setup.py bdist_wheel sdist
 python -m pip install --ignore-installed dist/pydecoders-0.1.0*.whl
 source ./tools/env.sh
 ```
-## Example
+## Build Graph
+1. Build graph for HKUST
+```bash
+python pydecoders/build_graph_main.py examples/hkust/conf/hkust.conf
+```
+2. Build graph for AISHELL
+```bash
+# prepare data
+cd examples/aishell && ./prepare_data.sh
+# build graph
+python pydecoders/build_graph_main.py examples/aishell/conf/aishell
+```
+
+
+## Decode
 1. WFST-based Decoder
 ```bash
 # first build WFST graph,optional
