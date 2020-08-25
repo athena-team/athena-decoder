@@ -1,4 +1,4 @@
-"""Transfer Arpa tri-gram language model to WFST format
+"""Transfer Arpa language model to WFST format
 
 Python versioin arpa2fst scripts, support arbitrary 
 arpa language model
@@ -26,6 +26,10 @@ class GrammarBuilder:
         self.grammar_fst.add_state()
         self.gram2state[self.eps] = 0
         self.grammar_fst.set_start(0)
+
+        self.grammar_fst.add_state()
+        self.gram2state[self.sb] = 1
+        self.grammar_fst.set_start(1)
 
         self.words_table = {}
         self.max_order = 0
@@ -130,9 +134,10 @@ class GrammarBuilder:
         elif word == self.se:
             src = self.find_state_of(self.eps)
             self.grammar_fst.set_final(src, self.to_tropical(prob))
-
         elif word == self.sb:
-            pass
+            src = self.find_state_of(self.sb)
+            des = self.find_state_of(self.eps)
+            self.grammar_fst.add_arc(src,self.make_arc(self.disambig_symbol, self.eps, boff, des))
         else:
             src = self.find_state_of(word)
             des = self.find_state_of(self.eps)
@@ -174,7 +179,6 @@ class GrammarBuilder:
         if parts[self.order] == self.se:
             src = self.find_state_of('/'.join(parts[1:self.order]))
             self.grammar_fst.set_final(src, self.to_tropical(prob))
-
         else:
             src = self.find_state_of('/'.join(parts[1:self.order]))
             des = self.find_state_of('/'.join(parts[2:self.order+1]))

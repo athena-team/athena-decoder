@@ -3,7 +3,7 @@ from graph import GraphBuilder
 import json
 import sys
 
-def build_graph(graph_type, input_lexicon_file, input_graphemes_file, input_grammar_file,
+def build_graph(graph_type, input_lexicon_file, input_graphemes_file, input_grammar_file, sil_symbol,
         output_disambig_graphemes_file='graphemes_disambig.txt',
         output_words_file='words.txt',
         output_graph_file='LG.fst'):
@@ -16,6 +16,7 @@ def build_graph(graph_type, input_lexicon_file, input_graphemes_file, input_gram
             input_lexicon_file,
             input_graphemes_file,
             input_grammar_file,
+            sil_symbol,
             output_disambig_graphemes_file,
             output_words_file,
             output_graph_file)
@@ -33,6 +34,7 @@ if __name__ == '__main__':
             config['graph']['input_lexicon_file'],
             config['graph']['input_graphemes_file'],
             config['graph']['input_grammar_file'],
+            config['graph']['sil_symbol'],
             config['graph']['output_disambig_graphemes_file'],
             config['graph']['output_words_file'],
             config['graph']['output_graph_file'])

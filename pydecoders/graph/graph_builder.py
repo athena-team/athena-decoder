@@ -54,7 +54,7 @@ class GraphBuilder:
             logging.error('only support LG and TLG graph')
             raise NotImplementedError
 
-    def make_graph(self, lexicon_file, graphemes_file, grammar_file,
+    def make_graph(self, lexicon_file, graphemes_file, grammar_file, sil_symbol,
             disambig_graphemes_file='graphemes_disambig.txt',
             words_file='words.txt', graph_file='LG.fst'):
         """build decode graph and write to disk
@@ -71,11 +71,11 @@ class GraphBuilder:
         """
 
         if self.graph_type == 'TLG':
-            L = self.lexicon_builder(lexicon_file, graphemes_file, sil_symbol='SIL')
+            L = self.lexicon_builder(lexicon_file, graphemes_file, sil_symbol)
             logging.info('grapheme should be  phones or syllables')
             logging.info('please confirm the sil symbol is "SIL" or some other you defined')
         elif self.graph_type == 'LG':
-            L = self.lexicon_builder(lexicon_file, graphemes_file, sil_symbol='<space>')
+            L = self.lexicon_builder(lexicon_file, graphemes_file, sil_symbol)
             logging.info('grapheme should be characters')
             logging.info('please confirm the sil symbol is <space> or some other you defined')
         self.lexicon_builder.write_words_table(words_file)
