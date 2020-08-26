@@ -15,5 +15,6 @@ for line in open(sys.argv[1]):
     for item in items[1:]:
         if item not in graphemes:
             break
-    else:
-        print("%s"%(' '.join(items)))
+        else:
+            print("%s"%(' '.join(items)))
+
