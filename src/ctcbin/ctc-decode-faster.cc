@@ -1,13 +1,13 @@
-#include <misc/graph-io.h>
+#include <utils/graph-io.h>
 #include <decoder/faster-decoder.h>
-#include <kaldi/parse-options.h>
 #include <ctc/decodable-am-ctc.h>
-#include <misc/utils.h>
+#include <utils/utils.h>
 #include <cstring>
+#include <cxxopts.hpp>
 
 #define SAMPLE_RATE 16000
 
-int main(int argc,char* argv[]){
+int main(int argc,const char** argv){
 
     const char *usage =
         "Faster decoder which decode features using CTC-based model.\n"
@@ -16,72 +16,64 @@ int main(int argc,char* argv[]){
         "\n"
         "Usage: ctc-decode-faster [options] <am-config> <graph-in> <feature-scp> <words-wspecifier> [prior-file]\n";
 
+    cxxopts::Options opt_parser(argv[0],"test");
 
-    kaldi::ParseOptions po(usage);
+    opt_parser.add_options()
+        ("acoustic-scale","Scaling ",cxxopts::value<float>()->default_value("3.0"))
+        ("allow-partial","Scaling ",cxxopts::value<bool>()->default_value("true"))
+        ("beam","Scaling ",cxxopts::value<float>()->default_value("15.0"))
+        ("max-active","Scaling ",cxxopts::value<int32>()->default_value("200"))
+        ("min-active","Scaling ",cxxopts::value<int32>()->default_value("0"))
+        ("blank-id","Scaling ",cxxopts::value<int>()->default_value("1"))
+        ("minus-blank","Scaling ",cxxopts::value<float>()->default_value("0"))
+        ("ctc-prune","Scaling ",cxxopts::value<bool>()->default_value("false"))
+        ("ctc-threshold","Scaling ",cxxopts::value<float>()->default_value("0.1"))
+        ("prior-scale","Scaling ",cxxopts::value<float>()->default_value("1.0"));
+    auto result = opt_parser.parse(argc,argv);
 
-    float acoustic_scale=3.0;
-    bool allow_partial=true;
-    float beam = 15.0;
-    int32 max_active = std::numeric_limits<int32>::max();
-    int32 min_active = 20;
-    float minus_blank=0;
-    int blank_id=1;
-    bool ctc_prune=false;
-    float ctc_threshold=0.1;
-
+    float acoustic_scale=result["acoustic-scale"].as<float>();
+    bool allow_partial=result["allow-partial"].as<bool>();
+    float beam = result["beam"].as<float>();
+    int32 max_active = result["max-active"].as<int32>();
+    int32 min_active = result["min-active"].as<int32>();
+    float minus_blank=result["minus-blank"].as<float>();
+    int blank_id=result["blank-id"].as<int>();
+    bool ctc_prune=result["ctc-prune"].as<bool>();
+    float ctc_threshold=result["ctc-threshold"].as<float>();
     float* prior_log_scores = NULL;
-    float prior_scale = 1.0;
+    float prior_scale = result["prior-scale"].as<float>();
 
-    po.Register("acoustic-scale", &acoustic_scale, "Scaling factor for acoustic likelihoods");
-    po.Register("allow-partial", &allow_partial, "Produce output even when final state was not reached");
-    po.Register("beam", &beam, "Decoding beam.  Larger->slower, more accurate.");
-    po.Register("max-active", &max_active, "Decoder max active states.  Larger->slower; " "more accurate");
-    po.Register("min-active", &min_active, "Decoder min active states (don't prune if #active less than this).");
-    po.Register("blank-id", &blank_id, "id of ctc <blk> label,should be >=1 ");
-    po.Register("minus-blank", &minus_blank, "minus value for ctc <blk> label,should be >=0");
-    po.Register("ctc-prune", &ctc_prune, "if execute ctc prune for blank frame");
-    po.Register("ctc-threshold", &ctc_threshold, "threshold for ctc prune");
-    po.Register("prior-scale", &prior_scale, "scale for prior scores");
-
-    po.Read(argc,argv);
+    std::string am_config = argv[1],
+        fst_rxfilename = argv[2],
+        feature_rspecifier = argv[3],
+        words_wxfilename = argv[4],
+        prior_rxfilename = argv[5];
 
 
-    if(po.NumArgs()!=4 && po.NumArgs()!=5){
-        po.PrintUsage();
-        exit(1);
-    }
-
-    std::string am_config = po.GetArg(1),
-        fst_rxfilename = po.GetArg(2),
-        feature_rspecifier = po.GetArg(3),
-        words_wxfilename = po.GetArg(4),
-        prior_rxfilename = po.GetOptArg(5);
-
-
-    KALDI_LOG<<"acoustic_scale: "<<acoustic_scale;
-    KALDI_LOG<<"allow_partial: "<<allow_partial;
-    KALDI_LOG<<"beam: "<<beam;
-    KALDI_LOG<<"max_active: "<<max_active;
-    KALDI_LOG<<"min_active: "<<min_active;
-    KALDI_LOG<<"blank_id: "<<blank_id;
-    KALDI_LOG<<"minus_blank: "<<minus_blank;
-    KALDI_LOG<<"ctc_prune: "<<ctc_prune;
-    KALDI_LOG<<"ctc_threshold: "<<ctc_threshold;
-    KALDI_LOG<<"prior_scale: "<<prior_scale;
+    std::cout<<"acoustic_scale: "<<acoustic_scale;
+    std::cout<<"allow_partial: "<<allow_partial;
+    std::cout<<"beam: "<<beam;
+    std::cout<<"max_active: "<<max_active;
+    std::cout<<"min_active: "<<min_active;
+    std::cout<<"blank_id: "<<blank_id;
+    std::cout<<"minus_blank: "<<minus_blank;
+    std::cout<<"ctc_prune: "<<ctc_prune;
+    std::cout<<"ctc_threshold: "<<ctc_threshold;
+    std::cout<<"prior_scale: "<<prior_scale;
 
     // read graph
-    fst::StdVectorFst* pgraph=ReadGraph(fst_rxfilename);
+    athena::StdVectorFst* pgraph=ReadGraph(fst_rxfilename);
     if(pgraph==NULL){
-        KALDI_ERR<<"read graph failed";
+        std::cerr<<"read graph failed";
         return -1;
     }
 
-    kaldi::FasterDecoderOptions options;
+    athena::FasterDecoderOptions options;
     options.beam=beam;
     options.max_active=max_active;
     options.min_active=min_active;
 
-    kaldi::FasterDecoder decoder(*pgraph,options);
+    athena::FasterDecoder decoder(*pgraph,options);
 
     DecodableMatrixScaled decodable(acoustic_scale,blank_id,minus_blank,ctc_prune,
             ctc_threshold,prior_scale,prior_log_scores);

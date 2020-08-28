@@ -1,16 +1,16 @@
 #include "decoder/faster-decoder.h"
-#include <kaldi/kaldi-error.h>
 #include <fst/types.h>
+#include <assert.h>
 
-namespace kaldi {
+namespace athena {
 
 
-FasterDecoder::FasterDecoder(const fst::Fst<fst::StdArc> &fst,
+FasterDecoder::FasterDecoder(const athena::StdVectorFst &fst,
                              const FasterDecoderOptions &opts):
     fst_(fst), config_(opts), num_frames_decoded_(-1) {
-  KALDI_ASSERT(config_.hash_ratio >= 1.0);  // less doesn't make much sense.
-  KALDI_ASSERT(config_.max_active > 1);
-  KALDI_ASSERT(config_.min_active >= 0 && config_.min_active < config_.max_active);
+  assert(config_.hash_ratio >= 1.0);  // less doesn't make much sense.
+  assert(config_.max_active > 1);
+  assert(config_.min_active >= 0 && config_.min_active < config_.max_active);
   toks_.SetSize(1000);  // just so on the first frame we do something reasonable.
 }
 
@@ -19,7 +19,7 @@ void FasterDecoder::InitDecoding() {
   // clean up from last time:
   ClearToks(toks_.Clear());
   StateId start_state = fst_.Start();
-  KALDI_ASSERT(start_state != fst::kNoStateId);
+  assert(start_state != -1);
   Arc dummy_arc(0, 0, Weight::One(), start_state);
   toks_.Insert(start_state, new Token(dummy_arc, NULL));
   ProcessNonemitting(std::numeric_limits<float>::max());
@@ -41,14 +41,14 @@ void FasterDecoder::Decode(DecodableInterface *decodable) {
 
 void FasterDecoder::AdvanceDecoding(DecodableInterface *decodable,
                                       int32 max_num_frames) {
-  KALDI_ASSERT(num_frames_decoded_ >= 0 &&
+  assert(num_frames_decoded_ >= 0 &&
                "You must call InitDecoding() before AdvanceDecoding()");
   int32 num_frames_ready = decodable->NumFramesReady();
   // num_frames_ready must be >= num_frames_decoded, or else
   // the number of frames ready must have decreased (which doesn't
   // make sense) or the decodable object changed between calls
   // (which isn't allowed).
-  KALDI_ASSERT(num_frames_ready >= num_frames_decoded_);
+  assert(num_frames_ready >= num_frames_decoded_);
   int32 target_frames_decoded = num_frames_ready;
   if (max_num_frames >= 0)
     target_frames_decoded = std::min(target_frames_decoded,
@@ -68,7 +68,7 @@ void FasterDecoder::AdvanceDecoding(DecodableInterface *decodable,
 bool FasterDecoder::ReachedFinal() {
   for (const Elem *e = toks_.GetList(); e != NULL; e = e->tail) {
     if (e->val->cost_ != std::numeric_limits<double>::infinity() &&
-        fst_.Final(e->key) != Weight::Zero())
+        fst_.Final(e->key).Value() != Weight::Zero().Value())
       return true;
   }
   return false;
@@ -206,7 +206,7 @@ double FasterDecoder::ProcessEmitting(DecodableInterface *decodable) {
   if (best_elem) {
     StateId state = best_elem->key;
     Token *tok = best_elem->val;
-    for (fst::ArcIterator<fst::Fst<Arc> > aiter(fst_, state);
+    for (athena::ArcIterator aiter(fst_, state);
          !aiter.Done();
          aiter.Next()) {
       const Arc &arc = aiter.Value();
@@ -232,15 +232,14 @@ double FasterDecoder::ProcessEmitting(DecodableInterface *decodable) {
     Token *tok = e->val;
     if (tok->cost_ < weight_cutoff) {  // not pruned.
       // np++;
-      KALDI_ASSERT(state == tok->arc_.nextstate);
-      for (fst::ArcIterator<fst::Fst<Arc> > aiter(fst_, state);
+      assert(state == tok->arc_.nextstate);
+      for (athena::ArcIterator aiter(fst_, state);
            !aiter.Done();
            aiter.Next()) {
         Arc arc = aiter.Value();
         if (arc.ilabel != 0) {  // propagate..
           BaseFloat ac_cost =  - decodable->LogLikelihood(frame, arc.ilabel);
           double new_weight = arc.weight.Value() + tok->cost_ + ac_cost;
-          //KALDI_LOG<<"cutoff: "<<next_weight_cutoff<<" weight: "<<new_weight;
           if (new_weight < next_weight_cutoff) {  // not pruned..
             Token *new_tok = new Token(arc, ac_cost, tok);
             numberofactivestates++;
@@ -274,7 +273,7 @@ void FasterDecoder::ProcessNonemitting(double cutoff) {
   // Processes nonemitting arcs for one frame. 
   int numberofactivestates=0;
 
-  KALDI_ASSERT(queue_.empty());
+  assert(queue_.empty());
   for (const Elem *e = toks_.GetList(); e != NULL;  e = e->tail)
     queue_.push_back(e->key);
   while (!queue_.empty()) {
@@ -286,8 +285,8 @@ void FasterDecoder::ProcessNonemitting(double cutoff) {
     if (tok->cost_ > cutoff) { // Don't bother processing successors.
       continue;
     }
-    KALDI_ASSERT(tok != NULL && state == tok->arc_.nextstate);
-    for (fst::ArcIterator<fst::Fst<Arc> > aiter(fst_, state);
+    assert(tok != NULL && state == tok->arc_.nextstate);
+    for (athena::ArcIterator aiter(fst_, state);
          !aiter.Done();
          aiter.Next()) {
       const Arc &arc = aiter.Value();
@@ -323,4 +322,4 @@ void FasterDecoder::ClearToks(Elem *list) {
   }
 }
 
-} // end namespace kaldi.
+}

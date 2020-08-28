@@ -1,4 +1,4 @@
-SUB_DIR= fst/ decoder/ kaldi/ misc/ ctcbin/ 
+SUB_DIR= decoder/ utils/ ctcbin/ 
 
 all: Target   
 

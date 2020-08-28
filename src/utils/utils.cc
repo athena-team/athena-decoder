@@ -1,11 +1,4 @@
-
-#include <misc/graph-io.h>
-#include <misc/utils.h>
-#include <kaldi/parse-options.h>
-#include <cstdlib>
-#include <cstring>
-#include <vector>
-#include <fstream>
+#include <utils/utils.h>
 
 std::string& trim(std::string& s){
     if(s.empty()) return s;
@@ -19,12 +12,12 @@ std::string& trim(std::string& s){
 int ReadPriorLogScores(std::string prior_rxfilename, float** prior_log_scores){
     if(prior_rxfilename == "" ||
             prior_log_scores == NULL){
-        KALDI_ERR<<"param error";
+        std::cerr<<"param error";
         return -1;
     }
     std::ifstream prior_file(prior_rxfilename.c_str(),std::ios::in);
     if(!prior_file.is_open()){
-        KALDI_ERR<<"open prior file error";
+        std::cerr<<"open prior file error";
         return -1;
     }
     float score;
@@ -35,8 +28,8 @@ int ReadPriorLogScores(std::string prior_rxfilename, float** prior_log_scores){
         i++;
     }
     prior_file.close();
-    KALDI_LOG<<"read prior scores successfully";
-    KALDI_LOG<<"prior scores dim : "<<i-1;
+    std::cout<<"read prior scores successfully";
+    std::cout<<"prior scores dim : "<<i-1;
     return 0;
 }
 
@@ -57,7 +50,7 @@ bool read_w_table(const char* wtablefile, std::vector<std::string>& table){
     if(wtablefile==NULL) return false;
     std::ifstream in(wtablefile,std::ios::in);
     if(!in.is_open()){
-        KALDI_ERR<<"open file failed";
+        std::cerr<<"open file failed";
         return false;
     }
     std::string word;

@@ -1,12 +1,13 @@
-#include <kaldi/decodable-itf.h>
+#include <decoder/decodable-itf.h>
 #include <cstdlib>
 #include <cstring>
+#include <assert.h>
 
-class DecodableMatrixScaled: public kaldi::DecodableInterface {
+class DecodableMatrixScaled: public athena::DecodableInterface {
     public:
-        DecodableMatrixScaled( kaldi::BaseFloat scale,int blank_id,kaldi::BaseFloat minus_blank,
-                bool ctc_prune,kaldi::BaseFloat ctc_threshold, kaldi::BaseFloat prior_scale,
-                kaldi::BaseFloat* prior_log_scores): 
+        DecodableMatrixScaled( BaseFloat scale,int blank_id,BaseFloat minus_blank,
+                bool ctc_prune,BaseFloat ctc_threshold, BaseFloat prior_scale,
+                BaseFloat* prior_log_scores): 
             scale_(scale), 
             blank_id_(blank_id),
             minus_blank_(minus_blank),
@@ -28,22 +29,22 @@ class DecodableMatrixScaled: public kaldi::DecodableInterface {
         virtual int32 NumFramesReady() const { return num_frames_calculated_; }
 
         virtual bool IsLastFrame(int32 frame) const {
-            KALDI_ASSERT(frame < NumFramesReady());
+            assert(frame < NumFramesReady());
             return (frame == NumFramesReady() - 1);
         }
 
         virtual bool IsBlankFrame(int32 frame) const {
-            KALDI_ASSERT(frame < NumFramesReady());
+            assert(frame < NumFramesReady());
             return false;
         }
         virtual bool IsCTCPrune() const{
             return this->ctc_prune_;
         }
 
-        virtual kaldi::BaseFloat LogLikelihood(int32 frame, int32 tid) {
+        virtual BaseFloat LogLikelihood(int32 frame, int32 tid) {
 
-            KALDI_ASSERT(blank_id_>=1);
-            KALDI_ASSERT(minus_blank_>=0);
+            assert(blank_id_>=1);
+            assert(minus_blank_>=0);
             return 1.1;
         }
         virtual int32 NumIndices() const { return 100;  }
@@ -51,14 +52,14 @@ class DecodableMatrixScaled: public kaldi::DecodableInterface {
     private:
         int num_frames_calculated_;
 
-        kaldi::BaseFloat scale_;
+        BaseFloat scale_;
         int blank_id_;
-        kaldi::BaseFloat minus_blank_;
+        BaseFloat minus_blank_;
         bool ctc_prune_;
-        kaldi::BaseFloat ctc_threshold_;
+        BaseFloat ctc_threshold_;
 
-        kaldi::BaseFloat* prior_log_scores_;
-        kaldi::BaseFloat prior_scale_;
+        BaseFloat* prior_log_scores_;
+        BaseFloat prior_scale_;
         
 };
 

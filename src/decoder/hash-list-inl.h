@@ -1,11 +1,10 @@
-#ifndef KALDI_UTIL_HASH_LIST_INL_H_
-#define KALDI_UTIL_HASH_LIST_INL_H_
+#ifndef _UTIL_HASH_LIST_INL_H_
+#define _UTIL_HASH_LIST_INL_H_
 
-// Do not include this file directly.  It is included by fast-hash.h
-#include <kaldi/kaldi-error.h>
+#include <assert.h>
+#include <iostream>
 
-
-namespace kaldi {
+namespace athena {
 
 template<class I, class T> HashList<I, T>::HashList() {
   list_head_ = NULL;
@@ -16,7 +15,7 @@ template<class I, class T> HashList<I, T>::HashList() {
 
 template<class I, class T> void HashList<I, T>::SetSize(size_t size) {
   hash_size_ = size;
-  KALDI_ASSERT(list_head_ == NULL &&
+  assert(list_head_ == NULL &&
       bucket_list_tail_ == static_cast<size_t>(-1));  // make sure empty.
   if (size > buckets_.size())
     buckets_.resize(size, HashBucket(0, NULL));
@@ -94,7 +93,7 @@ HashList<I, T>::~HashList() {
     delete[] allocated_[i];
   }
   if (num_in_list != num_allocated) {
-    KALDI_WARN << "Possible memory leak: " << num_in_list
+      std::cout << "Possible memory leak: " << num_in_list
                << " != " << num_allocated
                << ": you might have forgotten to call Delete on "
                << "some Elems";
@@ -115,7 +114,7 @@ void HashList<I, T>::Insert(I key, T val) {
     // opposite directions).
     if (bucket_list_tail_ == static_cast<size_t>(-1)) {
       // list was empty so this is the first elem.
-      KALDI_ASSERT(list_head_ == NULL);
+      assert(list_head_ == NULL);
       list_head_ = elem;
     } else {
       // link in to the chain of Elems
@@ -142,7 +141,7 @@ void HashList<I, T>::InsertMore(I key, T val) {
   elem->key = key;
   elem->val = val;
 
-  KALDI_ASSERT(bucket.last_elem != NULL);  // assume one element is already here
+  assert(bucket.last_elem != NULL);  // assume one element is already here
   if (bucket.last_elem->key == key) {  // standard behavior: add as last element
     elem->tail = bucket.last_elem->tail;
     bucket.last_elem->tail = elem;
@@ -153,12 +152,12 @@ void HashList<I, T>::InsertMore(I key, T val) {
              list_head_ : buckets_[bucket.prev_bucket].last_elem->tail);
   // find place to insert in linked list
   while (e != bucket.last_elem->tail && e->key != key) e = e->tail;
-  KALDI_ASSERT(e->key == key);  // not found? - should not happen
+  assert(e->key == key);  // not found? - should not happen
   elem->tail = e->tail;
   e->tail = elem;
 }
 
 
-}  // end namespace kaldi
+}  
 
-#endif  // KALDI_UTIL_HASH_LIST_INL_H_
+#endif  

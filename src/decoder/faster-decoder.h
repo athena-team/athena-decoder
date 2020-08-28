@@ -1,14 +1,12 @@
-#ifndef KALDI_DECODER_FASTER_DECODER_H_
-#define KALDI_DECODER_FASTER_DECODER_H_
+#ifndef _DECODER_FASTER_DECODER_H_
+#define _DECODER_FASTER_DECODER_H_
 
-#include "kaldi/hash-list.h"
-#include "kaldi/decodable-itf.h"
-#include "fst/arc.h"
-#include "fst/fst.h"
-#include "fst/weight.h"
-#include "fst/fst-decl.h"
+#include "decoder/hash-list.h"
+#include "decoder/decodable-itf.h"
+#include <assert.h>
+#include "fst/athena-fst.h"
 
-namespace kaldi {
+namespace athena {
 
 struct FasterDecoderOptions {
   BaseFloat beam;
@@ -25,12 +23,12 @@ struct FasterDecoderOptions {
 
 class FasterDecoder {
  public:
-  typedef fst::StdArc Arc;
+  typedef athena::StdArc Arc;
   typedef Arc::Label Label;
   typedef Arc::StateId StateId;
   typedef Arc::Weight Weight;
 
-  FasterDecoder(const fst::Fst<fst::StdArc> &fst, const FasterDecoderOptions &config);
+  FasterDecoder(const athena::StdVectorFst &fst, const FasterDecoderOptions &config);
 
   void SetOptions(const FasterDecoderOptions &config) { config_ = config; }
 
@@ -86,9 +84,7 @@ class FasterDecoder {
         if (prev == NULL) return;
         else tok = prev;
       }
-#ifdef KALDI_PARANOID
-      KALDI_ASSERT(tok->ref_count_ > 0);
-#endif
+      assert(tok->ref_count_ > 0);
     }
   };
   typedef HashList<StateId, Token*>::Elem Elem;
@@ -102,7 +98,7 @@ class FasterDecoder {
   void ProcessNonemitting(double cutoff);
 
   HashList<StateId, Token*> toks_;
-  const fst::Fst<fst::StdArc> &fst_;
+  const athena::StdVectorFst &fst_;
   FasterDecoderOptions config_;
   std::vector<StateId> queue_;  
   std::vector<BaseFloat> tmp_array_;  

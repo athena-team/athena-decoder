@@ -1,11 +1,11 @@
-#ifndef KALDI_UTIL_HASH_LIST_H_
-#define KALDI_UTIL_HASH_LIST_H_
+#ifndef _UTIL_HASH_LIST_H_
+#define _UTIL_HASH_LIST_H_
 #include <vector>
 #include <set>
 #include <algorithm>
 #include <limits>
 #include <cassert>
-#include <kaldi/kaldi-types.h>
+#include <fst/types.h>
 
 
 /* This header provides utilities for a structure that's used in a decoder (but
@@ -24,7 +24,7 @@
 */
 
 
-namespace kaldi {
+namespace athena {
 
 template<class I, class T> class HashList {
  public:
@@ -121,8 +121,8 @@ template<class I, class T> class HashList {
 };
 
 
-}  // end namespace kaldi
+}  
 
-#include "kaldi/hash-list-inl.h"
+#include "decoder/hash-list-inl.h"
 
-#endif  // KALDI_UTIL_HASH_LIST_H_
+#endif  

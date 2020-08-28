@@ -1,11 +1,11 @@
 
-#ifndef KALDI_ITF_DECODABLE_ITF_H_
-#define KALDI_ITF_DECODABLE_ITF_H_ 1
+#ifndef _ITF_DECODABLE_ITF_H_
+#define _ITF_DECODABLE_ITF_H_ 1
 
-#include <kaldi/kaldi-types.h>
-#include <kaldi/kaldi-error.h>
+#include <fst/types.h>
+#include <iostream>
 
-namespace kaldi {
+namespace athena {
 
 class DecodableInterface {
  public:
@@ -21,7 +21,7 @@ class DecodableInterface {
   } 
 
   virtual int32 NumFramesReady() const {
-    KALDI_ERR << "NumFramesReady() not implemented for this decodable type.";
+      std::cerr << "NumFramesReady() not implemented for this decodable type.";
     return -1;
   }
   virtual int32 NumIndices() const = 0;

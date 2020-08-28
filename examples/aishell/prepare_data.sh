@@ -3,8 +3,8 @@
 # This script prepare data for aishell dataset
 
 mkdir -p ./data ./graph
-wget -P ./data http://www.openslr.org/resources/33/resource_aishell.tgz
-(cd data && tar xvf resource_aishell.tgz)
+#wget -P ./data http://www.openslr.org/resources/33/resource_aishell.tgz
+#(cd data && tar xvf resource_aishell.tgz)
 awk '{print $1}' data/resource_aishell/lexicon.txt | grep -v "SPOKEN_NOISE\|SIL" | \
     awk -F "" '{
                     for(i=1;i<=NF;i++){
