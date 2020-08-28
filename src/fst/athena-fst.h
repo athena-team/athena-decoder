@@ -76,8 +76,6 @@ struct VectorState {
 typedef VectorState<StdArc> StdVectorState;
 
 
-//class ArcIterator;
-
 class StateIterator;
 
 template <class State>
