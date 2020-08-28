@@ -17,3 +17,4 @@ for line in open(sys.argv[1]):
             break
     else:
         print("%s"%(' '.join(items)))
+
