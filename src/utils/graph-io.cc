@@ -86,8 +86,7 @@ athena::StdVectorFst* ReadGraph(std::string filename){
             ReadTypeIO(file,arc.olabel);
             ReadTypeIO(file,weight);
             ReadTypeIO(file,arc.nextstate);
-            athena::TropicalWeight tmpweight(weight);
-            arc.weight=tmpweight;
+            arc.weight.SetValue(weight);
             pfst->AddArc(s,arc);
         }
     }

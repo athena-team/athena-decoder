@@ -3,63 +3,69 @@
 #include <ctc/decodable-am-ctc.h>
 #include <utils/utils.h>
 #include <cstring>
-#include <cxxopts.hpp>
+//#include <cxxopts.hpp>
+#include <gflags/gflags.h>
 
 #define SAMPLE_RATE 16000
 
-int main(int argc,const char** argv){
+
+DEFINE_double(acoustic_scale,3.0,"acoustic scale for am model");
+DEFINE_bool(allow_partial,true,"acoustic scale for am model");
+DEFINE_double(beam,3.0,"acoustic scale for am model");
+DEFINE_int32(max_active,200,"acoustic scale for am model");
+DEFINE_int32(min_active,0,"acoustic scale for am model");
+DEFINE_int32(blank_id,0,"acoustic scale for am model");
+DEFINE_double(minus_blank,3.0,"acoustic scale for am model");
+DEFINE_bool(ctc_prune,false,"acoustic scale for am model");
+DEFINE_double(ctc_threshold,3.0,"acoustic scale for am model");
+
+int main(int argc,char** argv){
 
     const char *usage =
-        "Faster decoder which decode features using CTC-based model.\n"
-        "Viterbi decoding, Only produces linear sequence; any lattice\n"
-        "produced is linear\n"
+        "Faster decoder which decode utterances using CTC-based model.\n"
         "\n"
-        "Usage: ctc-decode-faster [options] <am-config> <graph-in> <feature-scp> <words-wspecifier> [prior-file]\n";
+        "Usage: ctc-decode-faster [options] <am-config> <graph-in> <feature-scp> <words-wspecifier> \n";
 
-    cxxopts::Options opt_parser(argv[0],"test");
+    google::ParseCommandLineFlags(&argc,&argv,true);
 
-    opt_parser.add_options()
-        ("acoustic-scale","Scaling ",cxxopts::value<float>()->default_value("3.0"))
-        ("allow-partial","Scaling ",cxxopts::value<bool>()->default_value("true"))
-        ("beam","Scaling ",cxxopts::value<float>()->default_value("15.0"))
-        ("max-active","Scaling ",cxxopts::value<int32>()->default_value("200"))
-        ("min-active","Scaling ",cxxopts::value<int32>()->default_value("0"))
-        ("blank-id","Scaling ",cxxopts::value<int>()->default_value("1"))
-        ("minus-blank","Scaling ",cxxopts::value<float>()->default_value("0"))
-        ("ctc-prune","Scaling ",cxxopts::value<bool>()->default_value("false"))
-        ("ctc-threshold","Scaling ",cxxopts::value<float>()->default_value("0.1"))
-        ("prior-scale","Scaling ",cxxopts::value<float>()->default_value("1.0"));
-    auto result = opt_parser.parse(argc,argv);
+    if(argc != 5){
+        std::cout<<usage<<std::endl;
+        return 0;
+    }
 
-    float acoustic_scale=result["acoustic-scale"].as<float>();
-    bool allow_partial=result["allow-partial"].as<bool>();
-    float beam = result["beam"].as<float>();
-    int32 max_active = result["max-active"].as<int32>();
-    int32 min_active = result["min-active"].as<int32>();
-    float minus_blank=result["minus-blank"].as<float>();
-    int blank_id=result["blank-id"].as<int>();
-    bool ctc_prune=result["ctc-prune"].as<bool>();
-    float ctc_threshold=result["ctc-threshold"].as<float>();
-    float* prior_log_scores = NULL;
-    float prior_scale = result["prior-scale"].as<float>();
+    float acoustic_scale=FLAGS_acoustic_scale;
+    bool allow_partial=FLAGS_allow_partial;
+    float beam = FLAGS_beam;
+    int32 max_active = FLAGS_max_active;
+    int32 min_active = FLAGS_min_active;
+    float minus_blank = FLAGS_minus_blank;
+    int blank_id = FLAGS_blank_id; 
+    bool ctc_prune= FLAGS_ctc_prune;
+    float ctc_threshold = FLAGS_ctc_threshold;
+
+    std::cout<<"acoustic_scale: "<<acoustic_scale<<std::endl;
+    std::cout<<"allow_partial: "<<allow_partial<<std::endl;
+    std::cout<<"beam: "<<beam<<std::endl;
+    std::cout<<"max_active: "<<max_active<<std::endl;
+    std::cout<<"min_active: "<<min_active<<std::endl;
+    std::cout<<"blank_id: "<<blank_id<<std::endl;
+    std::cout<<"minus_blank: "<<minus_blank<<std::endl;
+    std::cout<<"ctc_prune: "<<ctc_prune<<std::endl;
+    std::cout<<"ctc_threshold: "<<ctc_threshold<<std::endl;
+
+
 
     std::string am_config = argv[1],
         fst_rxfilename = argv[2],
         feature_rspecifier = argv[3],
-        words_wxfilename = argv[4],
-        prior_rxfilename = argv[5];
+        words_wxfilename = argv[4];
+
+    std::cout<<"am_config: "<<am_config<<std::endl;
+    std::cout<<"fst_rxfilename: "<<fst_rxfilename<<std::endl;
+    std::cout<<"feature_rspecifier: "<<feature_rspecifier<<std::endl;
+    std::cout<<"words_wxfilename: "<<words_wxfilename<<std::endl;
 
 
-    std::cout<<"acoustic_scale: "<<acoustic_scale;
-    std::cout<<"allow_partial: "<<allow_partial;
-    std::cout<<"beam: "<<beam;
-    std::cout<<"max_active: "<<max_active;
-    std::cout<<"min_active: "<<min_active;
-    std::cout<<"blank_id: "<<blank_id;
-    std::cout<<"minus_blank: "<<minus_blank;
-    std::cout<<"ctc_prune: "<<ctc_prune;
-    std::cout<<"ctc_threshold: "<<ctc_threshold;
-    std::cout<<"prior_scale: "<<prior_scale;
 
     // read graph
     athena::StdVectorFst* pgraph=ReadGraph(fst_rxfilename);
@@ -67,6 +73,9 @@ int main(int argc,const char** argv){
         std::cerr<<"read graph failed";
         return -1;
     }
+    WriteGraph(pgraph);
+    return 0;
+
 
     athena::FasterDecoderOptions options;
     options.beam=beam;
@@ -76,7 +85,7 @@ int main(int argc,const char** argv){
     athena::FasterDecoder decoder(*pgraph,options);
 
     DecodableMatrixScaled decodable(acoustic_scale,blank_id,minus_blank,ctc_prune,
-            ctc_threshold,prior_scale,prior_log_scores);
+            ctc_threshold);
 
     decoder.Decode(&decodable);
     std::vector<int> trans;

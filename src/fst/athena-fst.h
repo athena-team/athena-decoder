@@ -20,7 +20,6 @@ public:
         return *this;
     }
     const T &Value() const { return value_; }
-protected:
     void SetValue(const T &f) { value_ = f; }
 private:
     T value_;
@@ -131,13 +130,13 @@ public:
         arcs = narcs > 0 ? &fst.states_[s]->arcs[0] : 0;
     }
     bool Done(){
-        return i_ < narcs;
+        return i_ >= narcs;
     }
     StdArc& Value(){
-        arcs[i_];
+        return arcs[i_];
     }
     void Next(){
-        i_++;
+        ++i_;
     }
 private:
     StdArc *arcs;
@@ -158,7 +157,6 @@ public:
         ++s_;
     }
 private:
-    StdVectorState* states;
     int nstates;
     int s_;
 };

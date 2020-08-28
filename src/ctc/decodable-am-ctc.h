@@ -6,8 +6,8 @@
 class DecodableMatrixScaled: public athena::DecodableInterface {
     public:
         DecodableMatrixScaled( BaseFloat scale,int blank_id,BaseFloat minus_blank,
-                bool ctc_prune,BaseFloat ctc_threshold, BaseFloat prior_scale,
-                BaseFloat* prior_log_scores): 
+                bool ctc_prune,BaseFloat ctc_threshold, BaseFloat prior_scale=0.0,
+                BaseFloat* prior_log_scores=NULL): 
             scale_(scale), 
             blank_id_(blank_id),
             minus_blank_(minus_blank),
