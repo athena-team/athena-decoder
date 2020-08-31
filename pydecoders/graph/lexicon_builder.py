@@ -150,7 +150,7 @@ class LexiconBuilder:
         Args:
             sil_prob: probability from end of a word to sil symbol
             sil_symbol: 'SIL' for phone-based ASR;'<space>' for
-            graphemeacter-based ASR
+            grapheme/character-based ASR
         """
         sil_cost = -1.0 * math.log(sil_prob)
         no_sil_cost = -1.0 * math.log(1.0 - sil_prob)
