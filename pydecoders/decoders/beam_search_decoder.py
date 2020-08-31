@@ -122,7 +122,7 @@ class BeamSearchDecoder:
                     k = self.max_active_local
                     if k > len(log_costs):
                         k = len(log_costs)
-                    reserved_idx = np.argpartition(log_costs, k-1)[:k-1]
+                    reserved_idx = np.argpartition(log_costs, k-1)[:k]
                 for next_idx in reserved_idx:
                     label = next_idx
                     if label == self.eos:
