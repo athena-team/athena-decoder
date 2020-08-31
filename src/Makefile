@@ -1,4 +1,4 @@
-SUB_DIR= decoder/ utils/ ctcbin/ 
+SUB_DIR= decoder/ utils/ ctcbin/ feat/ tfutils/
 
 all: Target   
 
