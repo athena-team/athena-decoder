@@ -1,6 +1,6 @@
-#include "decoder/faster-decoder.h"
 #include <fst/types.h>
-#include <assert.h>
+#include <cassert>
+#include "decoder/faster-decoder.h"
 
 namespace athena {
 
@@ -106,7 +106,6 @@ bool FasterDecoder::GetBestPath(std::vector<int>& trans) {
           trans.push_back(tok->arc_.olabel);
       }
   }
-  trans.pop_back();  // that was a "fake" token... gives no info.
   std::reverse(trans.begin(),trans.end());
   return true;
 }

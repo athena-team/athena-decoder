@@ -4,18 +4,19 @@
 #include "ctc/decodable-am-ctc.h"
 #include "utils/utils.h"
 #include "gflags/gflags.h"
+#include "ctc/inference.h"
 
 #define SAMPLE_RATE 16000
 
-DEFINE_double(acoustic_scale, 3.0, "acoustic scale for am model");
-DEFINE_bool(allow_partial, true, "acoustic scale for am model");
-DEFINE_double(beam, 3.0, "acoustic scale for am model");
-DEFINE_int32(max_active, 200, "acoustic scale for am model");
-DEFINE_int32(min_active, 0, "acoustic scale for am model");
-DEFINE_int32(blank_id, 0, "acoustic scale for am model");
-DEFINE_double(minus_blank, 3.0, "acoustic scale for am model");
-DEFINE_bool(ctc_prune, false, "acoustic scale for am model");
-DEFINE_double(ctc_threshold, 3.0, "acoustic scale for am model");
+DEFINE_double(acoustic_scale, 3.0, "Acoustic scale for acoustic score");
+DEFINE_bool(allow_partial, true, "If allow partial paths exists");
+DEFINE_double(beam, 3.0, "Decoding beam");
+DEFINE_int32(max_active, 200, "Max active states for one state");
+DEFINE_int32(min_active, 0, "Min active states for one state");
+DEFINE_int32(blank_id, 0, "Id of blank in CTC");
+DEFINE_double(minus_blank, 3.0, "Minus blank value for blank id");
+DEFINE_bool(ctc_prune, false, "If prune for score of blank id");
+DEFINE_double(ctc_threshold, 3.0, "Threshold of CTC prune");
 
 int main(int argc, char **argv) {
     const char *usage =
@@ -60,6 +61,26 @@ int main(int argc, char **argv) {
     std::cout << "feature_rspecifier: " << feature_rspecifier << std::endl;
     std::cout << "words_wxfilename: " << words_wxfilename << std::endl;
 
+
+    void* am_model;
+    if(inference::STATUS_OK != inference::LoadModel(am_config.c_str(),am_model)){
+        std::cerr<<"Load AM Failed!";
+        return -1;
+    }
+
+    void* amhandler;
+    if(inference::STATUS_OK != inference::CreateHandle(am_model,amhandler)){
+        std::cerr<<"Create AM Handler Failed!";
+        return -1;
+    }
+
+    inference::Input in;
+    /* fill the speech data to in struct*/
+    in.pcm_raw = new char[100]; // fake speech data
+    in.pcm_size = 100;// speech size
+    in.first = true;
+    in.last = true;
+
     // read graph
     athena::StdVectorFst * pgraph = ReadGraph(fst_rxfilename);
     if (pgraph == NULL) {
@@ -77,9 +98,10 @@ int main(int argc, char **argv) {
 
     DecodableCTC decodable(acoustic_scale, blank_id, minus_blank, ctc_prune,
                    ctc_threshold);
-    decodable.CalCTCScores();
+    decodable.CalCTCScores(amhandler, &in);
 
-    decoder.Decode(&decodable);
+    decoder.InitDecoding();
+    decoder.AdvanceDecoding(&decodable);
     std::vector < int >trans;
     decoder.GetBestPath(trans);
     std::cout<<"transcript is : ";
@@ -87,6 +109,15 @@ int main(int argc, char **argv) {
         std::cout<<table[trans[i]]<<" ";
     }
     std::cout<<std::endl;
+
+    if(inference::STATUS_OK != inference::FreeHandle(amhandler)){
+        std::cerr<<"Destroy am handler failed!";
+        return -1;
+    }
+    if(inference::STATUS_OK != inference::FreeModel(am_model)){
+        std::cerr<<"Unload am model Failed!!";
+        return -1;
+    }
 
     if (pgraph) delete pgraph;
     return 0;

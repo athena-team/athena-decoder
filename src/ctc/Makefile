@@ -1,10 +1,14 @@
 CC = g++ -lstdc++ -std=c++11 -O2 -ldl
-SRCS = tfmodel.cc 
+
+SRCS = ctc.cc inference.cc \
+	   ../feat/CFeatureClass.o ../feat/CFrontend.o ../feat/FeatureExtraction.o \
+	   ../tfutils/tfmodel.o
 OBJS = $(SRCS:.cc=.o)
 
 LDFLAGS = -Wall -fPIC -Wshadow -Wno-sign-compare -w 
 
-INCLUDES =  -I./tfutils \
+INCLUDES =  -I. \
+			-I../tfutils \
 			-I../feat \
 			-I$(TF_DIR) \
 			-I$(TF_DIR)/bazel-genfiles \
@@ -12,12 +16,18 @@ INCLUDES =  -I./tfutils \
             -I$(EIGEN) \
             -I$(ABSL)
 
-all:$(OBJS)
+TARGET = libinference-ctc.so
+all:$(TARGET) 
+
+$(TARGET):$(OBJS) 
+	$(CC) -shared -fPIC $^ -o $@
 
 %.o:%.cc
 	$(CC) $(INCLUDES) $(LDFLAGS) -c $< -o $@
 
 clean:
-	rm -rf *.o 
+	rm -rf *.o *.so
 
 include ../path.mk
+
+
