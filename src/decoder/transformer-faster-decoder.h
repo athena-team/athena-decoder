@@ -8,14 +8,6 @@
 #include "decoder/hash-list.h"
 #include "transformer/decodable-am-transformer.h"
 
-/*
-#include "kaldi/kaldi-lattice.h" 
-#include "fst/arc.h"
-#include "fst/fst.h"
-#include "fst/weight.h"
-#include "fst/fst-decl.h"
-*/
-
 namespace athena {
 
 struct TransformerFasterDecoderOptions {

@@ -62,3 +62,24 @@ bool read_w_table(const char* wtablefile, std::vector<std::string>& table){
     return true;
 }
 
+int ReadPCMFile(const char* pcm_file, short** pcm_samples, int* pcm_sample_count) {
+    FILE* fpFrom = fopen(pcm_file, "rb");
+    if (!fpFrom) {
+        std::cerr << "Failed open pcm file " << pcm_file << std::endl;
+        return -1;
+    }
+    fseek(fpFrom, 0, SEEK_END);
+    int pcm_bytes = ftell(fpFrom);
+    if(*pcm_samples){
+        free(*pcm_samples);
+        *pcm_samples = NULL;
+    }
+    *pcm_samples = static_cast<short*>(malloc(pcm_bytes));
+    rewind(fpFrom);
+    *pcm_sample_count = pcm_bytes / sizeof(short);
+    fread(*pcm_samples, sizeof(short), *pcm_sample_count, fpFrom);
+    fclose(fpFrom);
+    return 0;
+}
+
+

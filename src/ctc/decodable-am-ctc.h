@@ -9,10 +9,11 @@
 
 class DecodableCTC:public athena::DecodableInterface {
  public:
-    DecodableCTC(BaseFloat scale, int blank_id, BaseFloat minus_blank,
+    DecodableCTC(void* inf_handle,BaseFloat scale, int blank_id, BaseFloat minus_blank,
             bool ctc_prune, BaseFloat ctc_threshold,
             BaseFloat prior_scale = 0.0,
             BaseFloat * prior_log_scores = NULL):
+        inf_handle_(inf_handle),
         scale_(scale),
         blank_id_(blank_id),
         minus_blank_(minus_blank),
@@ -24,10 +25,10 @@ class DecodableCTC:public athena::DecodableInterface {
     int Reset() {            // call this function when decoder reset
         num_frames_calculated_ = 0;
     }
-    int CalCTCScores(void* am_handler, inference::Input* speech) {
+    int GetEncoderOutput(inference::Input* speech) {
 
         likes_.clear();
-        inference::INFStatus status=inference::GetEncoderOutput(am_handler, speech, &likes_);
+        inference::INFStatus status=inference::GetEncoderOutput(inf_handle_, speech, &likes_);
         if(inference::STATUS_ERROR == status){
             std::cerr<<"Inference Failed";
             return inference::STATUS_ERROR;
@@ -89,6 +90,7 @@ class DecodableCTC:public athena::DecodableInterface {
  private:
     
     inference::encoder_output likes_;
+    void* inf_handle_;
     int nrow_;
     int ncol_;
     /*

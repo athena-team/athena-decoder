@@ -74,12 +74,18 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    inference::Input in;
-    /* fill the speech data to in struct*/
-    in.pcm_raw = new char[100]; // fake speech data
-    in.pcm_size = 100;// speech size
-    in.first = true;
-    in.last = true;
+    std::ifstream feature_scp(feature_rspecifier,std::ios::in);
+    if(!feature_scp.is_open()){
+        std::cerr<<"open feature scp error";
+        return -1;
+    }
+    std::ofstream trans_out(words_wxfilename,std::ios::out);
+    if(!trans_out.is_open()){
+        std::cerr<<"open trans out error";
+        return -1;
+    }
+
+
 
     // read graph
     athena::StdVectorFst * pgraph = ReadGraph(fst_rxfilename);
@@ -87,28 +93,45 @@ int main(int argc, char **argv) {
         std::cerr << "read graph failed";
         return -1;
     }
-    std::vector<std::string> table;
-    read_w_table(words_wxfilename.c_str(), table);
+
     athena::FasterDecoderOptions options;
     options.beam = beam;
     options.max_active = max_active;
     options.min_active = min_active;
 
     athena::FasterDecoder decoder(*pgraph, options);
-
-    DecodableCTC decodable(acoustic_scale, blank_id, minus_blank, ctc_prune,
-                   ctc_threshold);
-    decodable.CalCTCScores(amhandler, &in);
-
     decoder.InitDecoding();
-    decoder.AdvanceDecoding(&decodable);
-    std::vector < int >trans;
-    decoder.GetBestPath(trans);
-    std::cout<<"transcript is : ";
-    for(int i=0;i<trans.size();i++){
-        std::cout<<table[trans[i]]<<" ";
+    std::vector<int> trans;
+    std::string key, path;
+    while(!feature_scp.eof()){
+        std::cout<<"dealing key: "<<key<<std::endl;
+        if(feature_scp>>key>>path){
+            short* pcm_samples = NULL;
+            int short_size = 0;
+            ReadPCMFile(path.c_str(), &pcm_samples, &short_size);
+            inference::Input in;
+            in.pcm_raw = (char*) pcm_samples;
+            in.pcm_size = short_size*2;
+            in.first = true;
+            in.last = true;
+
+            DecodableCTC decodable(amhandler, acoustic_scale, blank_id, minus_blank, ctc_prune,
+                    ctc_threshold);
+            if(-1 == decodable.GetEncoderOutput(&in)){// calculate ctc scores
+                std::cerr<<"calculate ctc scores failed"<<std::endl;
+                return -1;
+            }
+            decoder.AdvanceDecoding(&decodable);
+            if(in.last){
+                trans.clear();
+                decoder.GetBestPath(trans);
+                WriteTrans(trans_out, key, trans);
+                decoder.InitDecoding();
+            }
+
+        }
+
     }
-    std::cout<<std::endl;
 
     if(inference::STATUS_OK != inference::FreeHandle(amhandler)){
         std::cerr<<"Destroy am handler failed!";

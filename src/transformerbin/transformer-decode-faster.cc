@@ -1,9 +1,9 @@
+#include <cstring>
 #include "utils/graph-io.h"
 #include "decoder/transformer-faster-decoder.h"
 #include "transformer/decodable-am-transformer.h"
 #include "utils/utils.h"
 #include "transformer/inference.h"
-#include <cstring>
 #include "gflags/gflags.h"
 
 
@@ -78,17 +78,13 @@ int main(int argc,char* argv[]){
 
 
     // read graph
-    std::cout<<"start reading graph";
+    std::cout<<"start reading graph"<<std::endl;
     athena::StdVectorFst* pgraph=ReadGraph(fst_rxfilename);
     if(pgraph==NULL){
-        std::cerr<<"read graph failed";
+        std::cerr<<"read graph failed"<<std::endl;
         return -1;
     }
-    std::cout<<"finish reading graph";
-
-    std::vector<std::string> table;
-    read_w_table(words_wxfilename.c_str(), table);
-
+    std::cout<<"finish reading graph"<<std::endl;
 
 
     athena::TransformerFasterDecoderOptions options;
@@ -100,26 +96,39 @@ int main(int argc,char* argv[]){
 
     athena::TransformerFasterDecoder decoder(*pgraph,options);
 
-
-
-    inference::Input in;
-    /* fill the speech data to in struct*/
-    in.pcm_raw = new char[100]; // fake speech data
-    in.pcm_size = 100;// speech size
-
-
-    TransformerDecodable decodable(inf_handle,acoustic_scale,sos,eos);
-    decodable.GetEncoderOutput(&in);
-
-    decoder.Decode(&decodable);
-    std::vector<int> trans;
-    decoder.GetBestPath(trans);
-
-    std::cout<<"transcript is : ";
-    for(int i=0;i<trans.size();i++){
-        std::cout<<table[trans[i]]<<" ";
+    std::ifstream feature_scp(feature_rspecifier,std::ios::in);
+    if(!feature_scp.is_open()){
+        std::cerr<<"open feature scp error"<<std::endl;
+        return -1;
     }
-    std::cout<<std::endl;
+
+    std::ofstream trans_out(words_wxfilename,std::ios::out);
+    if(!trans_out.is_open()){
+        std::cerr<<"open trans out error"<<std::endl;
+        return -1;
+    }
+
+    std::vector<int> trans;
+    std::string key, path;
+    while(!feature_scp.eof()){
+        std::cout<<"dealing key: "<<key<<std::endl;
+        if(feature_scp>>key>>path){
+            short* pcm_samples = NULL;
+            int short_size = 0;
+            ReadPCMFile(path.c_str(), &pcm_samples, &short_size);
+            inference::Input in;
+            in.pcm_raw = (char*) pcm_samples;
+            in.pcm_size = short_size*2;
+
+            TransformerDecodable decodable(inf_handle,acoustic_scale,sos,eos);
+            decodable.GetEncoderOutput(&in);
+            decoder.Decode(&decodable);
+            trans.clear();
+            decoder.GetBestPath(trans);
+            WriteTrans(trans_out, key,trans);
+        }
+
+    }
 
     if(inference::STATUS_OK != inference::FreeHandle(inf_handle)){
         std::cerr<<"Destroy am handler failed!";

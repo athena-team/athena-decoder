@@ -1,7 +1,7 @@
 
 include path.mk
 
-SUB_DIR= decoder/ utils/ ctcbin/ feat/ tfutils/ ctc/ transformer/
+SUB_DIR= decoder/ utils/ feat/ tfutils/ ctc/ ctcbin/ transformer/ transformerbin/
 all: Target   
 
 Target:
@@ -13,6 +13,8 @@ Target:
 	cd ./lib && ln -sf libtensorflow_framework.so.1.14.1 libtensorflow_framework.so.1
 	cd ./lib && ln -sf libtensorflow_framework.so.1 libtensorflow_framework.so
 	@for subdir in $(SUB_DIR);do (cd $$subdir && make) done;
+	cd ./lib && ln -sf ../ctc/libinference-ctc.so libinference-ctc.so
+	cd ./lib && ln -sf ../transformer/libinference-transformer.so libinference-transformer.so
 
 
 clean:
