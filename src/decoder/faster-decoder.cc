@@ -44,10 +44,6 @@ void FasterDecoder::AdvanceDecoding(DecodableInterface *decodable,
   assert(num_frames_decoded_ >= 0 &&
                "You must call InitDecoding() before AdvanceDecoding()");
   int32 num_frames_ready = decodable->NumFramesReady();
-  // num_frames_ready must be >= num_frames_decoded, or else
-  // the number of frames ready must have decreased (which doesn't
-  // make sense) or the decodable object changed between calls
-  // (which isn't allowed).
   assert(num_frames_ready >= num_frames_decoded_);
   int32 target_frames_decoded = num_frames_ready;
   if (max_num_frames >= 0)
@@ -76,12 +72,6 @@ bool FasterDecoder::ReachedFinal() {
 
 
 bool FasterDecoder::GetBestPath(std::vector<int>& trans) {
-  // GetBestPath gets the decoding output.  If "use_final_probs" is true
-  // AND we reached a final state, it limits itself to final states;
-  // otherwise it gets the most likely token not taking into
-  // account final-probs.  fst_out will be empty (Start() == kNoStateId) if
-  // nothing was available.  It returns true if it got output (thus, fst_out
-  // will be nonempty).
   trans.clear();
   Token *best_tok = NULL;
   bool is_final = ReachedFinal();
@@ -194,14 +184,7 @@ double FasterDecoder::ProcessEmitting(DecodableInterface *decodable) {
   double weight_cutoff = GetCutoff(last_toks, &tok_cnt,
                                    &adaptive_beam, &best_elem);
   PossiblyResizeHash(tok_cnt);  // This makes sure the hash is always big enough.
-    
-  // This is the cutoff we use after adding in the log-likes (i.e.
-  // for the next frame).  This is a bound on the cutoff we will use
-  // on the next frame.
   double next_weight_cutoff = std::numeric_limits<double>::infinity();
-  
-  // First process the best token to get a hopefully
-  // reasonably tight bound on the next cutoff.
   if (best_elem) {
     StateId state = best_elem->key;
     Token *tok = best_elem->val;
@@ -218,19 +201,11 @@ double FasterDecoder::ProcessEmitting(DecodableInterface *decodable) {
     }
   }
 
-  // int32 n = 0, np = 0;
-
-  // the tokens are now owned here, in last_toks, and the hash is empty.
-  // 'owned' is a complex thing here; the point is we need to call TokenDelete
-  // on each elem 'e' to let toks_ know we're done with them.
-  int numberofactivestates=0;
   for (Elem *e = last_toks, *e_tail; e != NULL; e = e_tail) {  // loop this way
-    // n++;
     // because we delete "e" as we go.
     StateId state = e->key;
     Token *tok = e->val;
     if (tok->cost_ < weight_cutoff) {  // not pruned.
-      // np++;
       assert(state == tok->arc_.nextstate);
       for (athena::ArcIterator aiter(fst_, state);
            !aiter.Done();
@@ -241,7 +216,6 @@ double FasterDecoder::ProcessEmitting(DecodableInterface *decodable) {
           double new_weight = arc.weight.Value() + tok->cost_ + ac_cost;
           if (new_weight < next_weight_cutoff) {  // not pruned..
             Token *new_tok = new Token(arc, ac_cost, tok);
-            numberofactivestates++;
             Elem *e_found = toks_.Find(arc.nextstate);
             if (new_weight + adaptive_beam < next_weight_cutoff)
               next_weight_cutoff = new_weight + adaptive_beam;
@@ -270,17 +244,14 @@ double FasterDecoder::ProcessEmitting(DecodableInterface *decodable) {
 // TODO: first time we go through this, could avoid using the queue.
 void FasterDecoder::ProcessNonemitting(double cutoff) {
   // Processes nonemitting arcs for one frame. 
-  int numberofactivestates=0;
 
   assert(queue_.empty());
   for (const Elem *e = toks_.GetList(); e != NULL;  e = e->tail)
     queue_.push_back(e->key);
   while (!queue_.empty()) {
-      numberofactivestates++;
     StateId state = queue_.back();
     queue_.pop_back();
     Token *tok = toks_.Find(state)->val;  // would segfault if state not
-    // in toks_ but this can't happen.
     if (tok->cost_ > cutoff) { // Don't bother processing successors.
       continue;
     }

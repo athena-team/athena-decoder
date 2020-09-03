@@ -19,30 +19,19 @@ class TransformerBeamSearchDecoder {
  public:
 
   TransformerBeamSearchDecoder(const TransformerBeamSearchDecoderOptions &config);
-
   void SetOptions(const TransformerBeamSearchDecoderOptions &config) { config_ = config; }
-
   bool EndDetect();
-
-  ~TransformerBeamSearchDecoder() { }
-
   void Decode(TransformerDecodable *decodable);
-
   bool GetBestPath(std::vector<int>& trans);
-
   void InitDecoding(TransformerDecodable* decodable);
-
   int32 NumFramesDecoded() const { return num_frames_decoded_; }
-
  protected:
-
   class Token {
    public:
     Token *prev_;
     int32 ref_count_;
     double cost_;
     double rescaled_cost_;
-    // add for attention model
     std::shared_ptr<inference::PackedStates> ps_;
     std::vector<int> history_word;
 
@@ -73,10 +62,8 @@ class TransformerBeamSearchDecoder {
   };
 
   double ProcessEmitting(TransformerDecodable *decodable);
-
   TransformerBeamSearchDecoderOptions config_;
   int32 num_frames_decoded_;
-
   std::vector<Token*> completed_token_pool;
   std::vector<Token*> uncompleted_token_pool;
   std::vector<Token*> tmp_array;

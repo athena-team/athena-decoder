@@ -16,7 +16,7 @@ private:
     void* inf_handle;
     int sos;
     int eos;
-    std::vector<int> trans;
+    std::vector<int> labels;
 };
 
 } 

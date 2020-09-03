@@ -9,18 +9,15 @@ TransformerBeamSearchDecoder::TransformerBeamSearchDecoder( const TransformerBea
     config_(opts), num_frames_decoded_(-1) {
 }
 
-
 void TransformerBeamSearchDecoder::InitDecoding(TransformerDecodable* decodable) {
+
   Token* start_token = new Token(0.0, NULL);
   start_token->ps_ = decodable->GetInitialPackedStates();
   start_token->history_word.push_back(decodable->sos_);
-
   completed_token_pool.clear();
   uncompleted_token_pool.clear();
-
   uncompleted_token_pool.push_back(start_token);
   num_frames_decoded_ = 0;
-
 }
 
 void TransformerBeamSearchDecoder::Decode(TransformerDecodable *decodable) {
@@ -31,6 +28,7 @@ void TransformerBeamSearchDecoder::Decode(TransformerDecodable *decodable) {
   }while (!EndDetect());
 }
 bool TransformerBeamSearchDecoder::EndDetect(){
+
     float min_new_score = uncompleted_token_pool[0]->cost_;
     float max_completed_score = completed_token_pool[0]->cost_;
     float min_new_score_rescaled = uncompleted_token_pool[0]->rescaled_cost_;
@@ -72,16 +70,12 @@ bool TransformerBeamSearchDecoder::GetBestPath(std::vector<int>& trans) {
   return true;
 }
 
-
-
 double TransformerBeamSearchDecoder::ProcessEmitting(TransformerDecodable *decodable) {
 
   num_frames_decoded_++;
-
   std::vector<std::vector<float> > batch_log_scores;
   std::vector<std::vector<int> > batch_history_labels;
   std::shared_ptr<inference::PackedStates> ps(NULL); 
-
   for(int i=0;i<uncompleted_token_pool.size();i++){
       batch_history_labels.push_back(uncompleted_token_pool[i]->history_word);
   }
@@ -160,7 +154,5 @@ double TransformerBeamSearchDecoder::ProcessEmitting(TransformerDecodable *decod
   tmp_array.clear();
 
 }
-
-
 
 } // end namespace athena

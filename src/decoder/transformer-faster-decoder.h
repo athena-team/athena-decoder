@@ -34,27 +34,16 @@ class TransformerFasterDecoder {
   typedef Arc::Weight Weight;
 
   TransformerFasterDecoder(const athena::StdVectorFst& fst, const TransformerFasterDecoderOptions &config);
-
   void SetOptions(const TransformerFasterDecoderOptions &config) { config_ = config; }
-
   bool EndDetect();
-
   void DealCompletedToken();
-
   void DecodeOneStep(TransformerDecodable* decodable);
-
   ~TransformerFasterDecoder() { ClearToks(toks_.Clear()); }
-
   void Decode(TransformerDecodable *decodable);
-
   bool ReachedFinal();
-
   bool GetBestPath(std::vector<int>& trans);
-
   void InitDecoding(TransformerDecodable* decodable);
-
   int32 NumFramesDecoded() const { return num_frames_decoded_; }
-
   bool DebugTokenPool(std::string dir,std::string key);
  protected:
 
@@ -110,27 +99,19 @@ class TransformerFasterDecoder {
     }
   };
   typedef HashList<StateId, Token*>::Elem Elem;
-
   double GetCutoff(Elem *list_head, size_t *tok_count, BaseFloat *adaptive_beam, Elem **best_elem);
-
   void PossiblyResizeHash(size_t num_toks);
-
   double ProcessEmitting(TransformerDecodable *decodable);
-
   void ProcessNonemitting(double cutoff);
-
+  void ClearToks(Elem *list);
   HashList<StateId, Token*> toks_;
   const athena::StdVectorFst &fst_;
   TransformerFasterDecoderOptions config_;
   std::vector<StateId> queue_;  
   std::vector<BaseFloat> tmp_array_;  
   int32 num_frames_decoded_;
-
-  void ClearToks(Elem *list);
-
   std::vector<Token*> token_pool;
   Token* best_completed_tok;
-
 };
 
 

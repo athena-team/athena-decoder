@@ -67,7 +67,6 @@ void TransformerFasterDecoder::DecodeOneStep(TransformerDecodable* decodable){
     double weight_cutoff = ProcessEmitting(decodable);
     ProcessNonemitting(weight_cutoff);
     DealCompletedToken();
-
 }
 
 void TransformerFasterDecoder::DealCompletedToken(){
@@ -93,12 +92,7 @@ bool TransformerFasterDecoder::ReachedFinal() {
 }
 
 bool TransformerFasterDecoder::GetBestPath(std::vector<int>& trans) {
-  // GetBestPath gets the decoding output.  If "use_final_probs" is true
-  // AND we reached a final state, it limits itself to final states;
-  // otherwise it gets the most likely token not taking into
-  // account final-probs.  fst_out will be empty (Start() == kNoStateId) if
-  // nothing was available.  It returns true if it got output (thus, fst_out
-  // will be nonempty).
+
   if (best_completed_tok == NULL){
       std::cerr<<"do not get best completed tok";
       return false;
@@ -109,12 +103,12 @@ bool TransformerFasterDecoder::GetBestPath(std::vector<int>& trans) {
           trans.push_back(tok->arc_.olabel);
       }
   }
+  std::reverse(trans.begin(), trans.end());
   Token::TokenDelete(best_completed_tok);
   return true;
 }
 
 
-// Gets the weight cutoff.  Also counts the active tokens.
 double TransformerFasterDecoder::GetCutoff(Elem *list_head, size_t *tok_count,
                                 BaseFloat *adaptive_beam, Elem **best_elem) {
   double best_cost = std::numeric_limits<double>::infinity();
@@ -197,27 +191,17 @@ double TransformerFasterDecoder::ProcessEmitting(TransformerDecodable *decodable
   double weight_cutoff = GetCutoff(last_toks, &tok_cnt,
                                    &adaptive_beam, &best_elem);
   PossiblyResizeHash(tok_cnt);  // This makes sure the hash is always big enough.
-    
-  // This is the cutoff we use after adding in the log-likes (i.e.
-  // for the next frame).  This is a bound on the cutoff we will use
-  // on the next frame.
   double next_weight_cutoff = std::numeric_limits<double>::infinity();
 
-  // First process the best token to get a hopefully
-  // reasonably tight bound on the next cutoff.
   if (best_elem) {
     StateId state = best_elem->key;
     Token *tok = best_elem->val;
-
     std::vector<std::vector<float> > batch_log_scores;
     std::vector<std::vector<int> > batch_history_labels;
     batch_history_labels.push_back(tok->history_word);
-
     std::shared_ptr<inference::PackedStates> ps(NULL);
-
     decodable->InferenceOneStep(batch_history_labels,
             tok->ps_, batch_log_scores, ps);
-
     for (athena::ArcIterator aiter(fst_, state);
          !aiter.Done();
          aiter.Next()) {
@@ -232,16 +216,9 @@ double TransformerFasterDecoder::ProcessEmitting(TransformerDecodable *decodable
     }
   }
 
-
-  // the tokens are now owned here, in last_toks, and the hash is empty.
-  // 'owned' is a complex thing here; the point is we need to call TokenDelete
-  // on each elem 'e' to let toks_ know we're done with them.
-  
-
   std::vector<std::vector<float> > batch_log_scores;
   std::vector<std::vector<int> > batch_history_labels;
   std::shared_ptr<inference::PackedStates> ps(NULL); 
-
   for (Elem *e = last_toks, *e_tail; e != NULL; e = e_tail) {  // loop this way
     StateId state = e->key;
     Token *tok = e->val;
@@ -250,7 +227,6 @@ double TransformerFasterDecoder::ProcessEmitting(TransformerDecodable *decodable
     }
     e_tail = e->tail;
   }
-
   if(batch_history_labels.size()!=0){
       decodable->InferenceOneStep(batch_history_labels, ps, batch_log_scores, ps);
   }
@@ -268,14 +244,12 @@ double TransformerFasterDecoder::ProcessEmitting(TransformerDecodable *decodable
        std::vector<float>::iterator biggest = std::max_element(log_scores.begin(), log_scores.end());
        int biggest_idx = std::distance(std::begin(log_scores), biggest);
        if(biggest_idx == decodable->eos_ || num_frames_decoded_ > config_.max_seq_len){
-
            Token* new_tok = new Token(tok->arc_,tok->prev_,config_.graph_scale);
            new_tok->ps_ = tok->ps_;
            new_tok->history_word = tok->history_word;
            new_tok->cost_ = tok->cost_ + (-log_scores[decodable->eos_]*decodable->GetScale());
            new_tok->encounter_eos = true;
            toks_.Insert(state, new_tok);
-
            e_tail = e->tail;
            toks_.Delete(e);
            continue;
@@ -334,11 +308,9 @@ void TransformerFasterDecoder::ProcessNonemitting(double cutoff) {
         StateId state = queue_.back();
         queue_.pop_back();
         Token *tok = toks_.Find(state)->val;  // would segfault if state not
-        // in toks_ but this can't happen.
         if (tok->cost_ > cutoff) { // Don't bother processing successors.
             continue;
         }
-
         assert(tok != NULL && state == tok->arc_.nextstate);
         for (athena::ArcIterator aiter(fst_, state);
                 !aiter.Done();
