@@ -3,7 +3,7 @@ INCLUDEDIR = -I../ -I../tools/gflags/build/include/
 GCC = g++
 CPPFLAGS = -std=c++11 -g -fPIC $(INCLUDEDIR)
 
-LIBS = -lpthread -ldl -L../transformer -linference-transformer \
+LIBS = -lpthread -ldl -L../transformer -Wl,-Bstatic -linference-transformer -Wl,-Bdynamic \
 	   -L../lib -ltensorflow_cc -l tensorflow_framework \
 	   -L../tools/gflags/build/lib/ -lgflags
 

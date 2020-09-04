@@ -51,17 +51,16 @@ class TransformerFasterDecoder {
 
   TransformerFasterDecoder(const athena::StdVectorFst& fst, const TransformerFasterDecoderOptions &config);
   void SetOptions(const TransformerFasterDecoderOptions &config) { config_ = config; }
+  ~TransformerFasterDecoder() { ClearToks(toks_.Clear()); }
+  void Decode(TransformerDecodable *decodable);
+  bool GetBestPath(std::vector<int>& trans);
+ protected:
+  void InitDecoding(TransformerDecodable* decodable);
+  int32 NumFramesDecoded() const { return num_frames_decoded_; }
+  bool ReachedFinal();
   bool EndDetect();
   void DealCompletedToken();
   void DecodeOneStep(TransformerDecodable* decodable);
-  ~TransformerFasterDecoder() { ClearToks(toks_.Clear()); }
-  void Decode(TransformerDecodable *decodable);
-  bool ReachedFinal();
-  bool GetBestPath(std::vector<int>& trans);
-  void InitDecoding(TransformerDecodable* decodable);
-  int32 NumFramesDecoded() const { return num_frames_decoded_; }
-  bool DebugTokenPool(std::string dir,std::string key);
- protected:
 
   class Token {
    public:

@@ -36,12 +36,13 @@ class TransformerBeamSearchDecoder {
 
   TransformerBeamSearchDecoder(const TransformerBeamSearchDecoderOptions &config);
   void SetOptions(const TransformerBeamSearchDecoderOptions &config) { config_ = config; }
-  bool EndDetect();
   void Decode(TransformerDecodable *decodable);
   bool GetBestPath(std::vector<int>& trans);
+ protected:
+  bool EndDetect();
   void InitDecoding(TransformerDecodable* decodable);
   int32 NumFramesDecoded() const { return num_frames_decoded_; }
- protected:
+
   class Token {
    public:
     Token *prev_;
