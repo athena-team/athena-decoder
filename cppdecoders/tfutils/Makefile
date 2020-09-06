@@ -5,17 +5,11 @@ OBJS = $(SRCS:.cc=.o)
 LDFLAGS = -Wall -fPIC -Wshadow -Wno-sign-compare -w 
 
 INCLUDES =  -I./tfutils \
-			-I../feat \
-			-I$(TF_DIR) \
-			-I$(TF_DIR)/bazel-genfiles \
-			-I$(TF_INC_DIR)/external/protobuf_archive/src \
-            -I$(EIGEN) \
-            -I$(ABSL)
-
+			-I../feat 
 all:$(OBJS)
 
 %.o:%.cc
-	$(CC) $(INCLUDES) $(LDFLAGS) -c $< -o $@
+	$(CC) $(INCLUDES) $(EXTRA_CXXFLAGS)  $(LDFLAGS) -c $< -o $@
 
 clean:
 	rm -rf *.o 

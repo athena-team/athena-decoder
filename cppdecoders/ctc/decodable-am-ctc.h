@@ -82,10 +82,10 @@ class DecodableCTC:public athena::DecodableInterface {
          */
         assert(blank_id_ >= 1);
         assert(minus_blank_ >= 0);
-        assert(frame < nrow_);
-        assert(idx < ncol_);
-
+        assert(idx-1 < ncol_);
         frame=frame-(num_frames_calculated_-nrow_);
+        assert(frame < nrow_);
+
         double score = 0.0;
         if(prior_log_scores_){
             score=likes_.logits[frame][idx-1] - (prior_scale_*prior_log_scores_[idx-1]);

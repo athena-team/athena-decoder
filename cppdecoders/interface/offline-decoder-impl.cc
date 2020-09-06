@@ -73,7 +73,7 @@ int OfflineResource::FreeResource(){
         std::cerr<<"Unload AM Failed!";
         return -1;
     }
-    std::cout<<"Free Faster Resources Successfully";
+    std::cout<<"Free Faster Resources Successfully"<<std::endl;
     return 0;
 }
 void* OfflineResource::GetAM(){
@@ -182,16 +182,16 @@ int OfflineDecoder::CreateDecoder(Resource* r){
         std::cerr<<"do not support decoder type : "<<decoder_type_<<std::endl;
         return -1;
     }
-    std::cout<<"Create Faster Decoder Successfully";
+    std::cout<<"Create Faster Decoder Successfully"<<std::endl;
     return 0;
 }
 int OfflineDecoder::InitDecoder(){
-    std::cout<<"Init Faster Decoder Successfully";
+    std::cout<<"Init Faster Decoder Successfully"<<std::endl;
     return 0;
 }
 
 int OfflineDecoder::ResetDecoder(){
-    std::cout<<"Reset Faster Decoder Successfully";
+    std::cout<<"Reset Faster Decoder Successfully"<<std::endl;
     return 0;
 }
 int OfflineDecoder::FreeDecoder(){
@@ -216,24 +216,24 @@ int OfflineDecoder::FreeDecoder(){
         decodable_ = NULL;
     }
 
-    std::cout<<"Free Faster Decoder Successfully";
+    std::cout<<"Free Faster Decoder Successfully"<<std::endl;
     return 0;
 }
 
-int OfflineDecoder::PushData(void* data,int short_size,bool istail){
+int OfflineDecoder::PushData(void* data,int char_size,bool istail){
 
-    if(data==NULL || short_size <=0){
+    if(data==NULL || char_size <=0){
         std::cerr<<"No Speech Data";
         return -1;
     }
 
     inference::Input speech_data;
     speech_data.pcm_raw=static_cast<char*>(data);
-    speech_data.pcm_size = short_size*2;
+    speech_data.pcm_size = char_size;
 
     int status = static_cast<TransformerDecodable*>(decodable_)->GetEncoderOutput(&speech_data);
     if(status == inference::STATUS_ERROR){
-        std::cerr<<"Calculate AM Scores Failed";
+        std::cerr<<"Calculate AM Scores Failed"<<std::endl;
         return -1;
     }else if(status == inference::STATUS_OK){
         if(decoder_type_ == "wfst"){
@@ -244,10 +244,10 @@ int OfflineDecoder::PushData(void* data,int short_size,bool istail){
             static_cast<TransformerArgmaxDecoder*>(decoder_)->Decode(static_cast<TransformerDecodable*>(decodable_));
         }
 
-        std::cout<<"Push Data and Decode Successfully";
+        std::cout<<"Push Data and Decode Successfully"<<std::endl;
         return 0;
     }else{
-        std::cerr<<"Unknown Error When Calculate AM Scores";
+        std::cerr<<"Unknown Error When Calculate AM Scores"<<std::endl;
         return -1;
     }
 
@@ -271,7 +271,7 @@ int OfflineDecoder::GetResult(std::string& results,bool isfinal){
             results += " " + words_table_[trans[i]];
         }
     }
-    std::cout<<"Get Final Result Successfully. "<<"Result Size is : "<<trans.size();
+    std::cout<<"Get Final Result Successfully. "<<"Result Size is : "<<trans.size()<<std::endl;
     return 0;
 }
 

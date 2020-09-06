@@ -22,7 +22,7 @@
 #include "gflags/gflags.h"
 #include "ctc/inference.h"
 
-#define SAMPLE_RATE 16000
+#define BLOCK 1600
 
 DEFINE_double(acoustic_scale, 3.0, "Acoustic scale for acoustic score");
 DEFINE_bool(allow_partial, true, "If allow partial paths exists");
@@ -101,14 +101,14 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-
-
     // read graph
+    std::cout<<"start to load graph"<<std::endl;
     athena::StdVectorFst * pgraph = ReadGraph(fst_rxfilename);
     if (pgraph == NULL) {
         std::cerr << "read graph failed";
         return -1;
     }
+    std::cout<<"finish loading graph"<<std::endl;
 
     athena::FasterDecoderOptions options;
     options.beam = beam;
@@ -126,25 +126,38 @@ int main(int argc, char **argv) {
             int short_size = 0;
             ReadPCMFile(path.c_str(), &pcm_samples, &short_size);
             inference::Input in;
-            in.pcm_raw = (char*) pcm_samples;
-            in.pcm_size = short_size*2;
-            in.first = true;
-            in.last = true;
-
             DecodableCTC decodable(amhandler, acoustic_scale, blank_id, minus_blank, ctc_prune,
                     ctc_threshold);
-            if(-1 == decodable.GetEncoderOutput(&in)){// calculate ctc scores
-                std::cerr<<"calculate ctc scores failed"<<std::endl;
-                return -1;
+            bool head = true;
+            while(short_size > 0){
+                in.pcm_raw = (char*) pcm_samples;
+                int block_size = short_size > 1.2*BLOCK ? BLOCK : short_size;
+                short_size -= block_size;
+                pcm_samples += block_size;
+                in.pcm_size = 2*block_size;
+                if(head){
+                    in.first = true;
+                    head = false;
+                }else{
+                    in.first = false;
+                }
+                if(short_size<=0){
+                    in.last = true;
+                }else{
+                    in.last = false;
+                }
+                if(-1 == decodable.GetEncoderOutput(&in)){// calculate ctc scores
+                    std::cerr<<"calculate ctc scores failed"<<std::endl;
+                    return -1;
+                }
+                decoder.AdvanceDecoding(&decodable);
+                if(in.last){
+                    trans.clear();
+                    decoder.GetBestPath(trans);
+                    WriteTrans(trans_out, key, trans);
+                    decoder.InitDecoding();
+                }
             }
-            decoder.AdvanceDecoding(&decodable);
-            if(in.last){
-                trans.clear();
-                decoder.GetBestPath(trans);
-                WriteTrans(trans_out, key, trans);
-                decoder.InitDecoding();
-            }
-
         }
 
     }

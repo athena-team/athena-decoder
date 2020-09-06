@@ -34,9 +34,9 @@ int StreamingResource::LoadConfig(std::string config){
         if(key == "words_table_path") words_table_path_=value;
     }
     infile.close();
-    std::cout<<"am config path : "<<am_config_path_;
-    std::cout<<"graph path : "<<graph_path_;
-    std::cout<<"words table path : "<<words_table_path_;
+    std::cout<<"am config path : "<<am_config_path_<<std::endl;
+    std::cout<<"graph path : "<<graph_path_<<std::endl;
+    std::cout<<"words table path : "<<words_table_path_<<std::endl;
 
     return 0;
 }
@@ -44,15 +44,15 @@ int StreamingResource::LoadConfig(std::string config){
 int StreamingResource::CreateResource(){
     graph_=ReadGraph(graph_path_);
     if(graph_==NULL){
-        std::cerr<<"Load Graph Failed";
+        std::cerr<<"Load Graph Failed"<<std::endl;
         return -1;
     }
     read_w_table(words_table_path_.c_str(),words_table_);
     if(inference::STATUS_OK != inference::LoadModel(am_config_path_.c_str(),am_)){
-        std::cerr<<"Load AM Config Failed";
+        std::cerr<<"Load AM Config Failed"<<std::endl;
         return -1;
     }
-    std::cout<<"Create Faster Resources Successfully";
+    std::cout<<"Create Faster Resources Successfully"<<std::endl;
     return 0;
 }
 
@@ -62,10 +62,10 @@ int StreamingResource::FreeResource(){
         delete static_cast<StdVectorFst*>(graph_);
 
     if(inference::STATUS_OK != inference::FreeModel(am_)){
-        std::cerr<<"Unload AM Failed!";
+        std::cerr<<"Unload AM Failed!"<<std::endl;
         return -1;
     }
-    std::cout<<"Free Faster Resources Successfully";
+    std::cout<<"Free Faster Resources Successfully"<<std::endl;
     return 0;
 }
 void* StreamingResource::GetAM(){
@@ -76,7 +76,7 @@ void* StreamingResource::GetGraph(){
 }
 
 int StreamingResource::GetWordsTable(std::vector<std::string>& wt){
-    words_table_ = wt;
+    wt = words_table_;
     return 0;
 }
 
@@ -98,7 +98,7 @@ int StreamingDecoder::LoadConfig(std::string config){
 
     std::ifstream infile(config.c_str(),std::ios::in);
     if(!infile.is_open()){
-        std::cerr<<"Open Decoder Config Failed";
+        std::cerr<<"Open Decoder Config Failed"<<std::endl;
         return -1;
     }
     std::string strLine,key,value;
@@ -123,16 +123,16 @@ int StreamingDecoder::LoadConfig(std::string config){
     }
     infile.close();
 
-    std::cout<<"acoustic scale : "<<acoustic_scale_;
-    std::cout<<"allow partial : "<<allow_partial_;
-    std::cout<<"beam : "<<beam_;
-    std::cout<<"max active : "<<max_active_;
-    std::cout<<"min active : "<<min_active_;
-    std::cout<<"minus blank : "<<minus_blank_;
-    std::cout<<"blank id : "<<blank_id_;
-    std::cout<<"ctc prune : "<<ctc_prune_;
-    std::cout<<"ctc threshold : "<<ctc_threshold_;
-    std::cout<<"Load Faster Decoder Config Successfully";
+    std::cout<<"acoustic scale : "<<acoustic_scale_<<std::endl;
+    std::cout<<"allow partial : "<<allow_partial_<<std::endl;
+    std::cout<<"beam : "<<beam_<<std::endl;
+    std::cout<<"max active : "<<max_active_<<std::endl;
+    std::cout<<"min active : "<<min_active_<<std::endl;
+    std::cout<<"minus blank : "<<minus_blank_<<std::endl;
+    std::cout<<"blank id : "<<blank_id_<<std::endl;
+    std::cout<<"ctc prune : "<<ctc_prune_<<std::endl;
+    std::cout<<"ctc threshold : "<<ctc_threshold_<<std::endl;
+    std::cout<<"Load Faster Decoder Config Successfully"<<std::endl;
     return 0;
 }
 
@@ -142,7 +142,7 @@ int StreamingDecoder::CreateDecoder(Resource* r){
     cr->GetWordsTable(words_table_);
 
     if(inference::STATUS_OK != inference::CreateHandle(cr->GetAM(),am_handler_)){
-        std::cerr<<"Create AM Handler Failed!";
+        std::cerr<<"Create AM Handler Failed!"<<std::endl;
         return -1;
     }
 
@@ -154,14 +154,14 @@ int StreamingDecoder::CreateDecoder(Resource* r){
     decoder_ = new FasterDecoder(*static_cast<StdVectorFst*>(cr->GetGraph()),options);
     decodable_ = new DecodableCTC(am_handler_, acoustic_scale_,blank_id_,minus_blank_,ctc_prune_,ctc_threshold_,0,NULL);
 
-    std::cout<<"Create Faster Decoder Successfully";
+    std::cout<<"Create Faster Decoder Successfully"<<std::endl;
     return 0;
 }
 int StreamingDecoder::InitDecoder(){
     static_cast<FasterDecoder*>(decoder_)->InitDecoding();
     static_cast<DecodableCTC*>(decodable_)->Reset();
     ishead_ = true;
-    std::cout<<"Init Faster Decoder Successfully";
+    std::cout<<"Init Faster Decoder Successfully"<<std::endl;
     return 0;
 }
 
@@ -169,13 +169,13 @@ int StreamingDecoder::ResetDecoder(){
     static_cast<FasterDecoder*>(decoder_)->InitDecoding();
     static_cast<DecodableCTC*>(decodable_)->Reset();
     ishead_ = true;
-    std::cout<<"Reset Faster Decoder Successfully";
+    std::cout<<"Reset Faster Decoder Successfully"<<std::endl;
     return 0;
 }
 int StreamingDecoder::FreeDecoder(){
 
     if (inference::STATUS_OK != inference::FreeHandle(am_handler_)){
-        std::cerr <<"Destory AM Handler Failed!";
+        std::cerr <<"Destory AM Handler Failed!"<<std::endl;
         return -1;
     }
     if(decoder_){
@@ -188,47 +188,47 @@ int StreamingDecoder::FreeDecoder(){
         decodable_ = NULL;
     }
 
-    std::cout<<"Free Faster Decoder Successfully";
+    std::cout<<"Free Faster Decoder Successfully"<<std::endl;
     return 0;
 }
 
-int StreamingDecoder::PushData(void* data,int short_size,bool istail){
+int StreamingDecoder::PushData(void* data,int char_size,bool istail){
 
-    if(data==NULL || short_size <=0){
+    if(data==NULL || char_size <=0){
         std::cerr<<"No Speech Data";
         return -1;
     }
 
     inference::Input speech_data;
     speech_data.pcm_raw=static_cast<char*>(data);
-    speech_data.pcm_size = short_size*2;
+    speech_data.pcm_size = char_size;
 
     speech_data.first=ishead_;
     speech_data.last=istail;
 
     if(ishead_ || istail){
         if(ishead_){ 
-            std::cout<<"the First Data Block";
+            std::cout<<"the First Data Block"<<std::endl;
             ishead_=false;
         }
         if(istail){
-            std::cout<<"the Last Data Block";
+            std::cout<<"the Last Data Block"<<std::endl;
         }
     }
     else{
-        std::cout<<"the Middle Data Block";
+        std::cout<<"the Middle Data Block"<<std::endl;
     }
 
     int status = static_cast<DecodableCTC*>(decodable_)->GetEncoderOutput(&speech_data);
     if(status == inference::STATUS_ERROR){
-        std::cerr<<"Calculate AM Scores Failed";
+        std::cerr<<"Calculate AM Scores Failed"<<std::endl;
         return -1;
     }else if(status == inference::STATUS_OK){
         static_cast<FasterDecoder*>(decoder_)->AdvanceDecoding(static_cast<DecodableCTC*>(decodable_));
-        std::cout<<"Push Data and Decode Successfully";
+        std::cout<<"Push Data and Decode Successfully"<<std::endl;
         return 0;
     }else{
-        std::cerr<<"Unknown Error When Calculate AM Scores";
+        std::cerr<<"Unknown Error When Calculate AM Scores"<<std::endl;
         return -1;
     }
 
@@ -248,12 +248,12 @@ int StreamingDecoder::GetResult(std::string& results,bool isfinal){
     }
 
     if(isfinal)
-        std::cout<<"Get Final Result Successfully. "<<"Result Size is : "<<trans.size();
+        std::cout<<"Get Final Result Successfully. "<<"Result Size is : "<<trans.size()<<std::endl;
     else
-        std::cout<<"Get Temp Result Successfully. "<<"Result Size is : "<<trans.size();
+        std::cout<<"Get Temp Result Successfully. "<<"Result Size is : "<<trans.size()<<std::endl;
 
     return 0;
 }
 
 
-}// end of namespace api
+}// end of namespace athena 

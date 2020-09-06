@@ -13,7 +13,7 @@ OFFLINE_TARGET = liboffline-decoder.a
 all:$(STREAMING_TARGET) $(OFFLINE_TARGET)
 
 $(STREAMING_TARGET):$(STREAMING_OBJ) ../decoder/faster-decoder.o \
-	../utils/graph-io.o ../utils/utils.o ../transformer/inference.o ../transformer/decoder.o ../transformer/encoder.o ../feat/CFeatureClass.o ../feat/CFrontend.o \
+	../utils/graph-io.o ../utils/utils.o ../ctc/inference.o ../ctc/ctc.o ../feat/CFeatureClass.o ../feat/CFrontend.o \
 	../feat/FeatureExtraction.o ../tfutils/tfmodel.o
 	$(BUILD_LIBRARY)
 
