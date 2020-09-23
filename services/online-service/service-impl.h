@@ -39,6 +39,7 @@ public:
     int UpdateDeadline(std::chrono::system_clock::time_point dline);
     std::chrono::system_clock::time_point GetDeadline();
     athena::Decoder* GetHandler();
+    int CloseConnection();
 
 private:
     server* pserver;

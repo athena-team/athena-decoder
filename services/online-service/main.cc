@@ -7,7 +7,6 @@
 #include "service-impl.h"
 #include "service-env.h"
 
-#include <fstream>
 
 typedef websocketpp::server<websocketpp::config::asio> server;
 
@@ -17,8 +16,6 @@ using websocketpp::lib::bind;
 
 typedef websocketpp::config::asio::message_type::ptr message_ptr;
 
-static ThreadPool threadpool(1);
-
 void on_message(server* s, websocketpp::connection_hdl hdl, message_ptr msg) {
 
     LOG(INFO) << "on_message called with hdl: " << hdl.lock().get();
@@ -27,23 +24,22 @@ void on_message(server* s, websocketpp::connection_hdl hdl, message_ptr msg) {
     char con_addr[20];
     snprintf(con_addr, sizeof(con_addr), "%p", hdl.lock().get());
     std::string cid(con_addr);
+
     ContextPtr cptr;
-    int ret = ServEnv::instance()->GetContext(cid,s,hdl,cptr);
+    int ret = 0;
+    if(!ServEnv::instance()->DetectContext(cid)){
+        LOG(ERROR)<<"create context failed";
+        return;
+    }
+    ret = ServEnv::instance()->GetContext(cid, cptr);
     if(ret!=0){
-        LOG(ERROR)<<"get context or create context failed";
+        LOG(ERROR)<<"get context failed";
         return;
     }
 
-    /*
-    std::ofstream outFile("message.pcm",std::ios::out | std::ios::binary | std::ios::app);
-    outFile.write(msg->get_payload().c_str(),msg->get_payload().size());
-    LOG(INFO)<<"receice length:"<<msg->get_payload().size();
-    */
-
     std::string speech = msg->get_payload();
-
-    //cptr->RunDecode(speech.c_str(), speech.size(), false);
-    threadpool.enqueue(
+    ThreadPoolPtr pth = ServEnv::instance()->GetThreadPool(cptr->GetHandler());
+    pth->enqueue(
             [](ContextPtr cptr, std::string& speech){
                 cptr->RunDecode(speech.c_str(), speech.size(), false);
             },cptr, speech);
@@ -64,25 +60,19 @@ void on_close(server* s, websocketpp::connection_hdl hdl) {
 
 bool on_validate(server* s, websocketpp::connection_hdl hdl){
     LOG(INFO)<<"trigger on validate";
-    ServEnv::instance()->DeleteContext();
 
+    ServEnv::instance()->DeleteContext();
     char con_addr[20];
     snprintf(con_addr, sizeof(con_addr), "%p", hdl.lock().get());
     std::string cid(con_addr);
-    ContextPtr cptr;
-    int ret = ServEnv::instance()->GetContext(cid,s,hdl,cptr);
-    if(ret!=0){
-        LOG(INFO)<<"reject connect";
-        return false;
-    }else{
-        LOG(INFO)<<"accept connect";
-        return true;
-    }
+    int ret = ServEnv::instance()->CreateContext(cid, s, hdl);
+    if(ret == 0) return true;
+    else return false;
 }
 
 int main(){
 
-    int thread_num = 5;
+    int thread_num = 10;
 
     int ret = ServEnv::instance()->SetConfig("conf/resource.conf","conf/decoder.conf");
     if(ret!=0){
@@ -98,6 +88,12 @@ int main(){
     }
 
     ret = ServEnv::instance()->CreateHandlers(thread_num);
+    if(ret!=0){
+        LOG(ERROR)<<"create handlers failed";
+    }else{
+        LOG(INFO)<<"create handlers successfully";
+    }
+
 
 
     server asr_server;
@@ -110,7 +106,8 @@ int main(){
 
     asr_server.listen(websocketpp::lib::asio::ip::tcp::v4(), port);
     asr_server.start_accept();
-    LOG(INFO)<<"server ready";
+    LOG(INFO)<<"Thread Number is:"<<thread_num;
+    LOG(INFO)<<"Service Ready:";
 
     if(thread_num == 1){
         asr_server.run();

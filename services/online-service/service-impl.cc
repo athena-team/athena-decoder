@@ -17,31 +17,14 @@
 #include <memory>
 #include <glog/logging.h>
 
-#include <fstream>
-
-
 int Context::RunDecode(const char* speech, int len, bool is_last_pkg){
 
     char* buffer = const_cast<char*>(speech);
-    /*
-    std::ofstream outFile("server.pcm",std::ios::out | std::ios::binary | std::ios::app);
-    outFile.write(speech,len);
-    */
-
     handler->PushData(buffer, len, is_last_pkg);
     std::string trans;
     handler->GetResult(trans);
-    LOG(INFO)<<"ASR Result:"<<trans;
-    pserver->send(hdl, trans, WS_TEXT);
-
-    /*
-    char* buffer = const_cast<char*>(speech);
-    std::string str = buffer;
-    std::string res = str+str;
-    LOG(INFO)<<"reply:"<<res;
-    sleep(10);
-    pserver->send(hdl,res, WS_TEXT);
-    */
+    std::string json = "{\"result\":\""+trans+"\"}";
+    pserver->send(hdl, json, WS_TEXT);
     return 0;
 
 }
@@ -58,4 +41,8 @@ athena::Decoder* Context::GetHandler(){
     return handler;
 }
 
+int Context::CloseConnection(){
+    pserver->close(hdl, websocketpp::close::status::going_away, "");
+    return 0;
+}
 

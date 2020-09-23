@@ -24,10 +24,12 @@
 #include <websocketpp/server.hpp>
 #include <websocketpp/config/asio_no_tls.hpp>
 #include <chrono>
+#include <ThreadPool.h>
 #include "decoder-itf.h"
 #include "service-impl.h"
 
 typedef websocketpp::server<websocketpp::config::asio> server;
+typedef std::shared_ptr<ThreadPool> ThreadPoolPtr;
 
 class ServEnv:public Singleton<ServEnv>{
 public:
@@ -35,20 +37,24 @@ public:
     int CreateResource();
     int CreateHandlers(int thread_num);
 
-    int GetContext(std::string& cid, server* pserver,
-            websocketpp::connection_hdl hdl, ContextPtr& cptr);
+    int CreateContext(std::string& cid, server* pserver,
+            websocketpp::connection_hdl hdl);
+    bool DetectContext(std::string& cid);
+    int GetContext(std::string& cid, ContextPtr& cptr);
     int DeleteContext(std::string& cid);
     int DeleteContext();
+
+    ThreadPoolPtr GetThreadPool(athena::Decoder* handler);
     ~ServEnv();
 private:
     int GetHandler(athena::Decoder*& handler);
     int GiveBackHandler(athena::Decoder* handler);
-    int CreateContext(std::string& cid, server* pserver,
-            websocketpp::connection_hdl hdl);
 
     std::deque<athena::Decoder*> pool;
-    std::map<std::string, ContextPtr> contexts;
-    std::mutex mtx;
+    std::mutex pmtx;//mutex for pool
+    std::map<std::string, ContextPtr> contexts;//connection to context
+    std::mutex cmtx;//mutex for contexts
+    std::map<athena::Decoder*, ThreadPoolPtr> task_runner;//decoder to thread pool
     athena::Resource* resource;
     std::string resource_conf;
     std::string decoder_conf;

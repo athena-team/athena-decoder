@@ -39,6 +39,7 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <fstream>
 
 typedef websocketpp::client<websocketpp::config::asio_client> client;
 
@@ -82,6 +83,7 @@ public:
     void on_message(websocketpp::connection_hdl, client::message_ptr msg) {
         if (msg->get_opcode() == websocketpp::frame::opcode::text) {
             m_messages.push_back("<< " + msg->get_payload());
+            std::cout<<msg->get_payload()<<std::endl;
         } else {
             m_messages.push_back("<< " + websocketpp::utility::to_hex(msg->get_payload()));
         }
@@ -143,7 +145,6 @@ public:
 
     ~websocket_endpoint() {
         m_endpoint.stop_perpetual();
-        
         for (con_list::const_iterator it = m_connection_list.begin(); it != m_connection_list.end(); ++it) {
             if (it->second->get_status() != "Open") {
                 // Only close open connections
@@ -285,83 +286,26 @@ int main() {
     std::string input;
     websocket_endpoint endpoint;
 
-    int id = endpoint.connect("ws://localhost:8080");
+    std::ifstream infile("wav.scp",std::ios::in);
+    std::string key, path;
+    while(!infile.eof()){
+        if(infile>>key>>path){
 
-    short* pcm_samples = nullptr;
-    int short_size = 0;
-    read_pcm_file("/nfs/volume-225-8/speech_feats_labels/8k_rengongkefu/test_7867/pcm/test/data/000102bef73ec65f_left_0.37_3.37.wav",
-            &pcm_samples, &short_size);
-    int BLOCK = 1600;
-    while(short_size>0){
-        int block_size = short_size > 1.2*BLOCK ? BLOCK : short_size;
-        short_size -= block_size;
-        std::string speech((char*)pcm_samples, 2*block_size);
-        endpoint.send(id, speech);
-        //c.send(con,speech.c_str(),websocketpp::frame::opcode::binary);
-        pcm_samples += block_size;
-    }
-
-    sleep(10);
-    int close_code = websocketpp::close::status::normal;
-    endpoint.close(id, close_code,"close");
-
-
-    /*
-    while (!done) {
-        std::cout << "Enter Command: ";
-        std::getline(std::cin, input);
-
-        if (input == "quit") {
-            done = true;
-        } else if (input == "help") {
-            std::cout
-                << "\nCommand List:\n"
-                << "connect <ws uri>\n"
-                << "send <connection id> <message>\n"
-                << "close <connection id> [<close code:default=1000>] [<close reason>]\n"
-                << "show <connection id>\n"
-                << "help: Display this help text\n"
-                << "quit: Exit the program\n"
-                << std::endl;
-        } else if (input.substr(0,7) == "connect") {
-            int id = endpoint.connect(input.substr(8));
-            if (id != -1) {
-                std::cout << "> Created connection with id " << id << std::endl;
+            int id = endpoint.connect("ws://localhost:8080");
+            short* pcm_samples = nullptr;
+            int short_size = 0;
+            read_pcm_file(path.c_str(), &pcm_samples, &short_size);
+            int BLOCK = 1600;
+            while(short_size>0){
+                int block_size = short_size > 1.2*BLOCK ? BLOCK : short_size;
+                short_size -= block_size;
+                std::string speech((char*)pcm_samples, 2*block_size);
+                endpoint.send(id, speech);
+                pcm_samples += block_size;
             }
-        } else if (input.substr(0,4) == "send") {
-            std::stringstream ss(input);
-            std::string cmd;
-            int id;
-            std::string message;
-            ss >> cmd >> id;
-            std::getline(ss,message);
-            endpoint.send(id, message);
-        } else if (input.substr(0,5) == "close") {
-            std::stringstream ss(input);
-            
-            std::string cmd;
-            int id;
-            int close_code = websocketpp::close::status::normal;
-            std::string reason;
-            
-            ss >> cmd >> id >> close_code;
-            std::getline(ss,reason);
-            
-            endpoint.close(id, close_code, reason);
-        } else if (input.substr(0,4) == "show") {
-            int id = atoi(input.substr(5).c_str());
-
-            connection_metadata::ptr metadata = endpoint.get_metadata(id);
-            if (metadata) {
-                std::cout << *metadata << std::endl;
-            } else {
-                std::cout << "> Unknown connection id " << id << std::endl;
-            }
-        } else {
-            std::cout << "> Unrecognized Command" << std::endl;
+            sleep(5);
+            endpoint.close(id,websocketpp::close::status::going_away,"");
         }
     }
-    */
-
     return 0;
 }

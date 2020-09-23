@@ -23,7 +23,10 @@ int ServEnv::SetConfig(std::string rconf, std::string dconf){
     resource_conf = rconf;
     decoder_conf = dconf;
     resource = nullptr;
-    pool.clear();
+    {
+        std::lock_guard<std::mutex> lg(pmtx);
+        pool.clear();
+    }
     expire_sec = 60; // expire time 60s
     return 0;
 }
@@ -50,21 +53,27 @@ int ServEnv::CreateResource(){
 
 int ServEnv::CreateHandlers(int thread_num){
 
-    std::lock_guard<std::mutex> lg(mtx);
+    std::lock_guard<std::mutex> lg(pmtx);
     for(int i=0;i<thread_num;i++){
         athena::Decoder* handler = new athena::StreamingDecoder();
         handler->LoadConfig(decoder_conf);
         handler->CreateDecoder(resource);
         handler->InitDecoder();
         pool.push_back(handler);
+
+        ThreadPoolPtr th = std::shared_ptr<ThreadPool>(new ThreadPool(1));
+        task_runner[handler] = th;
     }
     return 0;
 }
 
+ThreadPoolPtr ServEnv::GetThreadPool(athena::Decoder* handler){
+    return task_runner[handler];
+}
 
 int ServEnv::GetHandler(athena::Decoder*& handler){
 
-    std::lock_guard<std::mutex> lg(mtx);
+    std::lock_guard<std::mutex> lg(pmtx);
     if(!pool.empty()){
         handler = pool.front();
         pool.pop_front();
@@ -78,7 +87,7 @@ int ServEnv::GetHandler(athena::Decoder*& handler){
 int ServEnv::GiveBackHandler(athena::Decoder* handler){
 
     handler->ResetDecoder();
-    std::lock_guard<std::mutex> lg(mtx);
+    std::lock_guard<std::mutex> lg(pmtx);
     pool.push_back(handler);
     handler = nullptr;
     return 0;
@@ -86,7 +95,7 @@ int ServEnv::GiveBackHandler(athena::Decoder* handler){
 
 ServEnv::~ServEnv(){
     {
-        std::lock_guard<std::mutex> lg(mtx);
+        std::lock_guard<std::mutex> lg(pmtx);
         while(!pool.empty()){
             pool.front()->FreeDecoder();
             pool.pop_front();
@@ -98,42 +107,35 @@ ServEnv::~ServEnv(){
     }
 }
 
-
-int ServEnv::GetContext(std::string& cid, server* pserver, 
-        websocketpp::connection_hdl hdl,
-        ContextPtr& cptr){
-    //std::lock_guard<std::mutex> lg(mtx);
-    mtx.lock();
+bool ServEnv::DetectContext(std::string& cid){
+    std::lock_guard<std::mutex> lg(cmtx);
     auto itr = contexts.find(cid);
     if(itr == contexts.end()){
-        LOG(INFO)<<"create new context";
-        mtx.unlock();
-        int ret = CreateContext(cid, pserver, hdl);
-        if(ret!=0){
-            LOG(INFO)<<"create new context failed";
-            return -1;
-        }
-        itr = contexts.find(cid);
+        return false;
+    }else{
+        return true;
     }
+}
 
+
+int ServEnv::GetContext(std::string& cid, ContextPtr& cptr){
+
+    std::lock_guard<std::mutex> lg(cmtx);
+    auto itr = contexts.find(cid);
     if(itr == contexts.end()){
-        LOG(ERROR)<<"get context failed";
-        mtx.unlock();
+        LOG(ERROR)<<"context do not exist";
         return -1;
     }
-
     cptr = itr->second;
-    cptr->UpdateDeadline(std::chrono::system_clock::now()+
-            std::chrono::seconds(expire_sec));
-
-    mtx.unlock();
+    auto new_deadline = std::chrono::system_clock::now() + std::chrono::seconds(expire_sec);
+    cptr->UpdateDeadline(new_deadline);
     return 0;
 }
 
 int ServEnv::CreateContext(std::string& cid, server* pserver,
         websocketpp::connection_hdl hdl){
     {
-        std::lock_guard<std::mutex> lg(mtx);
+        std::lock_guard<std::mutex> lg(cmtx);
         auto itr = contexts.find(cid);
         if(itr != contexts.end()){
             LOG(ERROR)<<"connection context already exists";
@@ -152,7 +154,7 @@ int ServEnv::CreateContext(std::string& cid, server* pserver,
                 std::chrono::system_clock::now()+std::chrono::seconds(expire_sec),
                 pserver, hdl, handler));
     {
-        std::lock_guard<std::mutex> lg(mtx);
+        std::lock_guard<std::mutex> lg(cmtx);
         contexts.insert(std::pair<std::string, ContextPtr>(cid, cptr));
         return 0;
     }
@@ -160,19 +162,22 @@ int ServEnv::CreateContext(std::string& cid, server* pserver,
 
 int ServEnv::DeleteContext(std::string& cid){
 
-    GiveBackHandler(contexts[cid]->GetHandler());
-    std::lock_guard<std::mutex> lg(mtx);
-    contexts.erase(cid);
+    std::lock_guard<std::mutex> lg(cmtx);
+    if(contexts.find(cid) != contexts.end()){
+        GiveBackHandler(contexts[cid]->GetHandler());
+        contexts.erase(cid);
+    }
     return 0;
 }
 
 int ServEnv::DeleteContext(){
+    LOG(INFO)<<"delete expire context";
     std::vector<std::string> del_con_vec;
     {
-        std::lock_guard<std::mutex> lg(mtx);
+        std::lock_guard<std::mutex> lg(cmtx);
         auto itr = contexts.begin();
         for(;itr!=contexts.end();itr++){
-            if(itr->second->GetDeadline() > std::chrono::system_clock::now()){
+            if(itr->second->GetDeadline() < std::chrono::system_clock::now()){
                 del_con_vec.push_back(itr->first);
             }
         }
@@ -180,10 +185,11 @@ int ServEnv::DeleteContext(){
     }
 
     {
-        std::lock_guard<std::mutex> lg(mtx);
+        std::lock_guard<std::mutex> lg(cmtx);
         auto itr = del_con_vec.begin();
         for(;itr!=del_con_vec.end();itr++){
             GiveBackHandler(contexts[*itr]->GetHandler());
+            contexts[*itr]->CloseConnection();
             contexts.erase(*itr);
         }
     }
