@@ -1,4 +1,4 @@
-CC = g++ -lstdc++ -std=c++11 -O2 -ldl
+CC = g++ -g -lstdc++ -std=c++11 -ldl
 
 SRCS = ctc.cc inference.cc \
 	   ../feat/CFeatureClass.o ../feat/CFrontend.o ../feat/FeatureExtraction.o \
@@ -9,20 +9,29 @@ LDFLAGS = -Wall -fPIC -Wshadow -Wno-sign-compare -w
 
 INCLUDES =  -I. \
 			-I../tfutils \
-			-I../feat 
+			-I../feat \
+			-I$(TF_DIR) \
+			-I$(TF_DIR)/bazel-genfiles \
+			-I$(TF_INC_DIR)/external/protobuf_archive/src \
+            -I$(EIGEN) \
+            -I$(ABSL)
 
-TARGET = libinference-ctc.so
-all:$(TARGET) 
+DYNAMIC_LIB = libinference-ctc.so
+STATIC_LIB = libinference-ctc.a
+all:$(DYNAMIC_LIB) $(STATIC_LIB)
 
-$(TARGET):$(OBJS) 
+$(DYNAMIC_LIB):$(OBJS) 
 	$(CC) -shared -fPIC $^ -o $@
+
+$(STATIC_LIB):$(OBJS)
+	$(BUILD_LIBRARY)
 
 %.o:%.cc
 	$(CC) $(INCLUDES) $(EXTRA_CXXFLAGS) $(LDFLAGS) -c $< -o $@
 
 clean:
-	rm -rf *.o *.so
+	rm -rf *.o *.so *.a
 
-include ../path.mk
+include ../path.mk ../lib.mk
 
 

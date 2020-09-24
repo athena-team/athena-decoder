@@ -38,7 +38,8 @@ INFStatus LoadModel(const char *conf, void* &Model_Handel) {
     string conf_dir = entry_conf.substr(0, pos+1);
     char config[1024];
     std::string path;
-    int num_threads;
+    int num_threads = 0;
+    int use_gpu = 0;
     FILE *fIconf = fopen(conf, "r" );
     if(NULL == fIconf) {
         std::cerr<<"Fail to load handle conf"<<std::endl;
@@ -56,6 +57,8 @@ INFStatus LoadModel(const char *conf, void* &Model_Handel) {
                 path.assign(conf_value);
             }else if(0 == strcmp("NUM_THREADS", conf_key)){
                 num_threads = std::atoi(conf_value);
+            }else if(0 == strcmp("USE_GPU", conf_key)){
+                use_gpu = std::atoi(conf_value);
             }
         }
     }
@@ -64,7 +67,7 @@ INFStatus LoadModel(const char *conf, void* &Model_Handel) {
     ModelHandle *model_handle = new ModelHandle;
 
     // init atten model
-    model_handle->ctc_model = init_model(path, num_threads);
+    model_handle->ctc_model = init_model(path, num_threads, use_gpu);
     strcpy(model_handle->ctc_model->config, config);
 
     Model_Handel = (void*)model_handle;
@@ -102,13 +105,19 @@ INFStatus CreateHandle(void* Model_Handel, void* &Inf_Handel) {
 INFStatus GetEncoderOutput(void* Inf_Handle, Input* in, encoder_output* enc_output){
     InfHandle *inf_handle = (InfHandle *)Inf_Handle;
     Ctc* ctc_ = (Ctc*)inf_handle->handle_;
-    ctc_->push_states(in);
-    int ret = ctc_->model_run(ctc_->tfmodel);
+    int ret = ctc_->push_states(in);
+    if (-2 == ret){
+        std::cerr << "The input is too short!\n";
+        return STATUS_SHORT;
+    } else if (-1 == ret){
+        std::cerr << "Fail to push states!\n";
+        return STATUS_ERROR;
+    }
+    ret = ctc_->model_run(ctc_->tfmodel);
     if (-1 == ret ){
         std::cerr << "Fail to model run!" << std::endl;
         return STATUS_ERROR;
     }
-    ret = 0;
     ret = ctc_->get_new_states(enc_output);
     if (-1 == ret){
         std::cerr << "Fail to get new states!" << std::endl;

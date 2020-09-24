@@ -67,6 +67,9 @@ private:
     char *remain_audio_;
     int frame_shift_size_;
     int sample_rate_;
+    int num_feat_dim_;
+    int packet_padding_;
+    int last_packet_left_;
     
     float *one_cal_feat_buff_;
     float *prefix_buff_;

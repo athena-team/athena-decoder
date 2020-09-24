@@ -27,6 +27,7 @@
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/util/stat_summarizer.h"
 #include "tensorflow/cc/saved_model/tag_constants.h"
+#include "tensorflow/core/graph/default_device.h"
 
 using namespace tensorflow;
 
@@ -57,7 +58,7 @@ struct TFIO {
 
 };
 
-TFModel* init_model(std::string model_path, int num_threads);
+TFModel* init_model(std::string model_path, int num_threads, int use_gpu);
 
 int model_run(const TFModel* tfmodel, TFIO* tfio);
 }

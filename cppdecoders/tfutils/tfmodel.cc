@@ -28,7 +28,7 @@ int TFIO::get_index(std::vector<std::string>& output_names, std::string name) {
     return it - output_names.begin();
 }
 
-TFModel* init_model(std::string model_path, int num_threads) {
+TFModel* init_model(std::string model_path, int num_threads, int use_gpu) {
     TFModel* tfmodel = new TFModel();
     std::unique_ptr<GraphDef> graph_def;
     graph_def.reset(new GraphDef());
@@ -42,6 +42,12 @@ TFModel* init_model(std::string model_path, int num_threads) {
     // create session options
     SessionOptions options;
     ConfigProto& config = options.config;
+
+    if (use_gpu > 0){
+        config.mutable_gpu_options()->set_allow_growth(true);
+        tensorflow::graph::SetDefaultDevice("/gpu:0", graph_def.get());
+    }   
+ 
     if (num_threads > 0) {
         config.set_intra_op_parallelism_threads(1);
         config.set_inter_op_parallelism_threads(num_threads);
