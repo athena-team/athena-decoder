@@ -43,8 +43,8 @@ void OfflineASRHandler(
         LOG(ERROR)<<"push data failed";
         return;
     }
-    std::string result;
-    ret = handler->GetResult(result, true);
+    std::string trans;
+    ret = handler->GetResult(trans, true);
     if(ret!=0){
         LOG(ERROR)<<"get result failed";
         return;
@@ -54,5 +54,7 @@ void OfflineASRHandler(
         LOG(ERROR)<<"give back handler failed";
         return;
     }
-    cb(result);
+
+    std::string json = "{\"result\":\""+trans+"\"}";
+    cb(json);
 }
