@@ -9,12 +9,7 @@ LDFLAGS = -Wall -fPIC -Wshadow -Wno-sign-compare -w
 
 INCLUDES =  -I. \
 			-I../tfutils \
-			-I../feat \
-			-I$(TF_DIR) \
-			-I$(TF_DIR)/bazel-genfiles \
-			-I$(TF_INC_DIR)/external/protobuf_archive/src \
-            -I$(EIGEN) \
-            -I$(ABSL)
+			-I../feat 
 
 DYNAMIC_LIB = libinference-ctc.so
 STATIC_LIB = libinference-ctc.a

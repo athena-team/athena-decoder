@@ -1,4 +1,4 @@
-CC = g++ -lstdc++ -std=c++11 -O2 -ldl
+CC = g++ -g -lstdc++ -std=c++11 -ldl
 SRCS = encoder.cc decoder.cc inference.cc \
 	   ../feat/CFeatureClass.o ../feat/CFrontend.o ../feat/FeatureExtraction.o \
 	   ../tfutils/tfmodel.o
@@ -10,16 +10,21 @@ INCLUDES =  -I. \
 			-I../tfutils \
 			-I../feat 
 
-TARGET = libinference-transformer.so
-all:$(TARGET)
+DYNAMIC_LIB = libinference-transformer.so
+STATIC_LIB = libinference-transformer.a
 
-$(TARGET):$(OBJS)
+all:$(DYNAMIC_LIB) $(STATIC_LIB)
+
+$(DYNAMIC_LIB):$(OBJS)
 	$(CC) -shared -fPIC $^ -o $@
+
+$(STATIC_LIB):$(OBJS)
+	$(BUILD_LIBRARY)
 
 %.o:%.cc
 	$(CC) $(INCLUDES) $(EXTRA_CXXFLAGS) $(LDFLAGS) -c $< -o $@
 
 clean:
-	rm -rf *.o *.so
+	rm -rf *.o *.so *.a
 
-include ../path.mk
+include ../path.mk ../lib.mk
