@@ -14,17 +14,67 @@
 //  limitations under the License.
 //  ==============================================================================
 #include <service-impl.h>
+#include "service-env.h"
 #include <memory>
 #include <glog/logging.h>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
+int Context::HandleMessage(message_ptr msg){
+    if(WS_TEXT==msg->get_opcode()){
+        json params = json::parse(msg->get_payload());
+        if("START" == params["opt"]){
+            if(status != CONTEXT_READY){
+                LOG(ERROR)<<"previous status should be ready, but "<<status;
+                return -1;
+            }
+            status = CONTEXT_START;
+            LOG(INFO)<<"status:"<<status;
+        }
+        if("STOP" == params["opt"]){
+            if(status != CONTEXT_START && status != CONTEXT_ING){
+                LOG(ERROR)<<"previous status should be start or ing, but "<<status;
+                return -1;
+            }
+            status = CONTEXT_END;
+            LOG(INFO)<<"status:"<<status;
+            ServEnv::instance()->DeleteContext();
+        }
+
+    }else if(WS_BINARY==msg->get_opcode()){
+        if(status != CONTEXT_START && status != CONTEXT_ING){
+            LOG(ERROR)<<"previous status should be start or ing, but "<<status;
+            return -1;
+        }
+        status = CONTEXT_ING;
+        LOG(INFO)<<"status:"<<status;
+        std::string speech = msg->get_payload();
+        return RunDecode(speech.c_str(), speech.size(),false);
+    }else{
+        LOG(ERROR)<<"message type error";
+        return -1;
+    }
+}
+
 
 int Context::RunDecode(const char* speech, int len, bool is_last_pkg){
 
     char* buffer = const_cast<char*>(speech);
-    handler->PushData(buffer, len, is_last_pkg);
+    int ret = handler->PushData(buffer, len, is_last_pkg);
+    if(ret != 0){
+        LOG(INFO)<<"Push Data Failed";
+        return -1;
+    }
     std::string trans;
-    handler->GetResult(trans);
-    std::string json = "{\"result\":\""+trans+"\"}";
-    pserver->send(hdl, json, WS_TEXT);
+    ret = handler->GetResult(trans);
+    if(ret !=0){
+        LOG(INFO)<<"Get Result Failed";
+        return -1;
+    }
+    json result;
+    result["result"] = trans;
+    pserver->send(hdl, result.dump(), WS_TEXT);
     return 0;
 
 }
@@ -43,6 +93,14 @@ athena::Decoder* Context::GetHandler(){
 
 int Context::CloseConnection(){
     pserver->close(hdl, websocketpp::close::status::going_away, "");
+    return 0;
+}
+ContextStatus Context::GetStatus(){
+    return status;
+}
+
+int Context::SetStatus(ContextStatus s){
+    status = s;
     return 0;
 }
 

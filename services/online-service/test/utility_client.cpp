@@ -28,6 +28,7 @@
 // Additional related material can be found in the tutorials/utility_client
 // directory of the WebSocket++ repository.
 
+//#include <websocketpp/config/asio_no_tls_client.hpp>
 #include <websocketpp/config/asio_no_tls_client.hpp>
 #include <websocketpp/client.hpp>
 
@@ -40,7 +41,10 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <chrono>
+#include <thread>
 
+//typedef websocketpp::client<websocketpp::config::asio_client> client;
 typedef websocketpp::client<websocketpp::config::asio_client> client;
 
 class connection_metadata {
@@ -160,7 +164,6 @@ public:
                           << ec.message() << std::endl;
             }
         }
-        
         m_thread->join();
     }
 
@@ -223,7 +226,7 @@ public:
         }
     }
 
-    void send(int id, std::string message) {
+    void send(int id, std::string message, websocketpp::frame::opcode::value value) {
         websocketpp::lib::error_code ec;
         
         con_list::iterator metadata_it = m_connection_list.find(id);
@@ -233,7 +236,7 @@ public:
         }
         
         //m_endpoint.send(metadata_it->second->get_hdl(), message, websocketpp::frame::opcode::text, ec);
-        m_endpoint.send(metadata_it->second->get_hdl(), message, websocketpp::frame::opcode::binary, ec);
+        m_endpoint.send(metadata_it->second->get_hdl(), message, value, ec);
         if (ec) {
             std::cout << "> Error sending message: " << ec.message() << std::endl;
             return;
@@ -282,16 +285,17 @@ int read_pcm_file(const char* pcm_file, short** pcm_samples, int* pcm_sample_cou
     return 0;
 }
 int main() {
-    bool done = false;
-    std::string input;
     websocket_endpoint endpoint;
-
     std::ifstream infile("wav.scp",std::ios::in);
     std::string key, path;
     while(!infile.eof()){
         if(infile>>key>>path){
-
-            int id = endpoint.connect("ws://localhost:8080");
+            int id = endpoint.connect("ws://localhost:8080");//need time to establish connection, asynochrous
+            while(endpoint.get_metadata(id)->get_status() != "Open"){
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            }
+            std::string params = "{\"opt\":\"START\"}";
+            endpoint.send(id,params.c_str(),websocketpp::frame::opcode::text);
             short* pcm_samples = nullptr;
             int short_size = 0;
             read_pcm_file(path.c_str(), &pcm_samples, &short_size);
@@ -300,12 +304,19 @@ int main() {
                 int block_size = short_size > 1.2*BLOCK ? BLOCK : short_size;
                 short_size -= block_size;
                 std::string speech((char*)pcm_samples, 2*block_size);
-                endpoint.send(id, speech);
+                endpoint.send(id, speech,websocketpp::frame::opcode::binary);
                 pcm_samples += block_size;
             }
-            sleep(5);
-            endpoint.close(id,websocketpp::close::status::going_away,"");
+
+            params = "{\"opt\":\"STOP\"}";
+            endpoint.send(id,params.c_str(),websocketpp::frame::opcode::text);
+            while(endpoint.get_metadata(id)->get_status() != "Closed"){
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            }
+
+
         }
     }
+
     return 0;
 }

@@ -41,7 +41,6 @@ public:
             websocketpp::connection_hdl hdl);
     bool DetectContext(std::string& cid);
     int GetContext(std::string& cid, ContextPtr& cptr);
-    int DeleteContext(std::string& cid);
     int DeleteContext();
 
     ThreadPoolPtr GetThreadPool(athena::Decoder* handler);

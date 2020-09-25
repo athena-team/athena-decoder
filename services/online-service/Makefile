@@ -11,7 +11,8 @@ INCLUDES =  -I. \
 			-I../../cppdecoders/interface/ \
 			-I../dependencies/websocketpp/ \
 			-I../dependencies/boost_1_72_0/ \
-			-I../dependencies/glog/build/
+			-I../dependencies/glog/build/ \
+			-I../dependencies/json/include/
 
 LIB = -L../../cppdecoders/interface -lstreaming-decoder -lpthread \
 	  -L../dependencies/glog/build/ -lglog -L../../cppdecoders/lib \

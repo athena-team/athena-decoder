@@ -127,6 +127,7 @@ int ServEnv::GetContext(std::string& cid, ContextPtr& cptr){
         return -1;
     }
     cptr = itr->second;
+    CHECK(cptr->GetStatus() != CONTEXT_CLOSED);
     auto new_deadline = std::chrono::system_clock::now() + std::chrono::seconds(expire_sec);
     cptr->UpdateDeadline(new_deadline);
     return 0;
@@ -160,24 +161,20 @@ int ServEnv::CreateContext(std::string& cid, server* pserver,
     }
 }
 
-int ServEnv::DeleteContext(std::string& cid){
-
-    std::lock_guard<std::mutex> lg(cmtx);
-    if(contexts.find(cid) != contexts.end()){
-        GiveBackHandler(contexts[cid]->GetHandler());
-        contexts.erase(cid);
-    }
-    return 0;
-}
-
 int ServEnv::DeleteContext(){
-    LOG(INFO)<<"delete expire context";
     std::vector<std::string> del_con_vec;
     {
         std::lock_guard<std::mutex> lg(cmtx);
         auto itr = contexts.begin();
         for(;itr!=contexts.end();itr++){
             if(itr->second->GetDeadline() < std::chrono::system_clock::now()){
+                // time out
+                itr->second->SetStatus(CONTEXT_END);
+                del_con_vec.push_back(itr->first);
+            }
+            if(itr->second->GetStatus() == CONTEXT_CLOSED ||
+                    itr->second->GetStatus() == CONTEXT_END){
+                // have be closed by client
                 del_con_vec.push_back(itr->first);
             }
         }
@@ -189,7 +186,14 @@ int ServEnv::DeleteContext(){
         auto itr = del_con_vec.begin();
         for(;itr!=del_con_vec.end();itr++){
             GiveBackHandler(contexts[*itr]->GetHandler());
-            contexts[*itr]->CloseConnection();
+            CHECK(contexts[*itr]->GetStatus() == CONTEXT_END ||
+                    contexts[*itr]->GetStatus() == CONTEXT_CLOSED);
+            // if connection have already be closed by client,
+            // server could not close the same connection twice
+            // cause segmentation fault
+            if(contexts[*itr]->GetStatus() == CONTEXT_END){
+                contexts[*itr]->CloseConnection();
+            }
             contexts.erase(*itr);
         }
     }

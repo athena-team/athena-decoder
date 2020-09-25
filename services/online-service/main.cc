@@ -18,9 +18,6 @@ typedef websocketpp::config::asio::message_type::ptr message_ptr;
 
 void on_message(server* s, websocketpp::connection_hdl hdl, message_ptr msg) {
 
-    LOG(INFO) << "on_message called with hdl: " << hdl.lock().get();
-    LOG(INFO)<<"trigger on message";
-
     char con_addr[20];
     snprintf(con_addr, sizeof(con_addr), "%p", hdl.lock().get());
     std::string cid(con_addr);
@@ -36,44 +33,48 @@ void on_message(server* s, websocketpp::connection_hdl hdl, message_ptr msg) {
         LOG(ERROR)<<"get context failed";
         return;
     }
-
-    std::string speech = msg->get_payload();
     ThreadPoolPtr pth = ServEnv::instance()->GetThreadPool(cptr->GetHandler());
     pth->enqueue(
-            [](ContextPtr cptr, std::string& speech){
-                cptr->RunDecode(speech.c_str(), speech.size(), false);
-            },cptr, speech);
+            [](ContextPtr cptr, message_ptr msg){
+                cptr->HandleMessage(msg);
+            },cptr, msg);
 }
 void on_open(server* s, websocketpp::connection_hdl hdl) {
-    LOG(INFO)<<"trigger on open";
-
-}
-
-void on_close(server* s, websocketpp::connection_hdl hdl) {
-    LOG(INFO)<<"trigger on close";
     char con_addr[20];
     snprintf(con_addr, sizeof(con_addr), "%p", hdl.lock().get());
     std::string cid(con_addr);
-    ServEnv::instance()->DeleteContext(cid);
+}
 
+void on_close(server* s, websocketpp::connection_hdl hdl) {
+    char con_addr[20];
+    snprintf(con_addr, sizeof(con_addr), "%p", hdl.lock().get());
+    std::string cid(con_addr);
+
+    if(ServEnv::instance()->DetectContext(cid)){
+        ContextPtr cptr;
+        ServEnv::instance()->GetContext(cid, cptr);
+        cptr->SetStatus(CONTEXT_CLOSED);
+    }
 }
 
 bool on_validate(server* s, websocketpp::connection_hdl hdl){
-    LOG(INFO)<<"trigger on validate";
 
     ServEnv::instance()->DeleteContext();
     char con_addr[20];
     snprintf(con_addr, sizeof(con_addr), "%p", hdl.lock().get());
     std::string cid(con_addr);
+
     int ret = ServEnv::instance()->CreateContext(cid, s, hdl);
     if(ret == 0) return true;
     else return false;
 }
 
-int main(){
+int main(int argc, char **argv){
+
+    //FLAGS_log_dir = "./logs";
+    //google::InitGoogleLogging(argv[0]);
 
     int thread_num = 10;
-
     int ret = ServEnv::instance()->SetConfig("conf/resource.conf","conf/decoder.conf");
     if(ret!=0){
         LOG(ERROR)<<"set server env config failed";
@@ -98,6 +99,7 @@ int main(){
 
     server asr_server;
     asr_server.init_asio();
+    asr_server.set_reuse_addr(true);
     int port = 8080;
     asr_server.set_message_handler(bind(&on_message,&asr_server,::_1,::_2));
     asr_server.set_open_handler(bind(&on_open,&asr_server,::_1));

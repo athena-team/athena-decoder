@@ -22,3 +22,7 @@ if [ ! -d glog ];then
     cp ../src/glog/*.h ./glog
     cd ../../
 fi
+
+if [ ! -d json ];then
+    git clone https://github.com/nlohmann/json.git
+fi
