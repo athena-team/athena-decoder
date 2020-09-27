@@ -57,22 +57,35 @@ private:
     float* buffer_state_2;
     float* buffer_state_3;
     float* buffer_state_4;
-   
-    int pack_duration_; // seconds
-    int left_context_;
+     
+    // seconds
+    int pack_duration_;
+    // padding left frames
+    int left_context_; 
+    // padding right frames
     int right_context_;
-    int repeat_size_;
+    /*
+     * number of byte for one frame copy, used for online,
+     * frame length 25ms, frame shift 10ms, the copy is 15ms
+     */
+    int repeat_size_;   
     char *repeat_audio_;
+    // the size that is less than a frame-shift bytes, 16k is 320, 8k is 160, default 16k
     int remain_size_;
     char *remain_audio_;
+    // frame shift byte size, 16k is 320, default is 16k
     int frame_shift_size_;
-    int sample_rate_;
+    int sample_rate_; 
+    // feat size of frame after left and right padding, num_feat_dim_ = left_context_ + 1 + right_context_
     int num_feat_dim_;
+    // padding zero to the first packet and last packet
     int packet_padding_;
+    // reserve number frames of history feature
     int last_packet_left_;
-    
-    float *one_cal_feat_buff_;
     float *prefix_buff_;
+    // the size is : left_context_ + right_context_ + 1 
+    float *one_cal_feat_buff_;
+
     TFIO* tfio;
 
     FeatHandler *handler_;
