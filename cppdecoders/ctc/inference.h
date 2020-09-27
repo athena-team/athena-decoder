@@ -64,8 +64,9 @@ struct encoder_output{
 };
 
 enum INFStatus {
-    STATUS_OK      = 0,
+    STATUS_OK      =  0,
     STATUS_ERROR   = -1,
+    STATUS_SHORT   = -2,
 };
 
 INFStatus LoadModel(const char *conf, void* &Model_Handle);

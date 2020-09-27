@@ -42,7 +42,8 @@ INFStatus LoadModel(const char *conf, void* &Model_Handle) {
     char enc_config[1024];
     std::string enc_path;
     std::string dec_path;
-    int num_threads;
+    int num_threads = 0;
+    int use_gpu = 0;
     FILE *fIconf = fopen(conf, "r" );
     if(NULL == fIconf) {
         std::cerr<<"Fail to load handle conf"<<std::endl;
@@ -62,6 +63,8 @@ INFStatus LoadModel(const char *conf, void* &Model_Handle) {
                 dec_path.assign(conf_value);
             }else if(0 == strcmp("NUM_THREADS", conf_key)){
                 num_threads = std::atoi(conf_value);
+            }else if(0 == strcmp("USE_GPU", conf_key)){
+                use_gpu = std::atoi(conf_value);
             }
         }
     }
@@ -70,11 +73,11 @@ INFStatus LoadModel(const char *conf, void* &Model_Handle) {
     ModelHandle *model_handle = new ModelHandle;
 
     // init encoder
-    model_handle->enc_model = init_model(enc_path, num_threads);
+    model_handle->enc_model = init_model(enc_path, num_threads, use_gpu);
     strcpy(model_handle->enc_model->config, enc_config);
 
     // init decoder
-    model_handle->dec_model = init_model(dec_path, num_threads);
+    model_handle->dec_model = init_model(dec_path, num_threads, use_gpu);
 
     Model_Handle = (void*)model_handle;
 

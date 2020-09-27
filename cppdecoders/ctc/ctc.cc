@@ -43,6 +43,9 @@ Ctc::Ctc(){
     remain_audio_ = new char[320];
     frame_shift_size_ = 320;
     sample_rate_ = 8000;
+    num_feat_dim_ = feat_dim_;
+    packet_padding_ = 0;
+    last_packet_left_ = 0;
 
     buffer_state_0 = new float[512];
     buffer_state_1 = new float[512];
@@ -77,7 +80,7 @@ int Ctc::push_states(Input* in) {
     int total_audio_size = 0;
      
     if (in->first){
-        std::memset(prefix_buff_, 0.0, 8*440*sizeof(float));
+        std::memset(prefix_buff_, 0.0, last_packet_left_ * num_feat_dim_ * sizeof(float));
         std::memset(buffer_state_0, 0.0, 512*sizeof(float));
         std::memset(buffer_state_1, 0.0, 512*sizeof(float));
         std::memset(buffer_state_2, 0.0, 512*sizeof(float));
@@ -157,10 +160,7 @@ int Ctc::push_states(Input* in) {
             }
         }
     }
-    if (total_audio_size < 160){
-        std::cerr << "pcm size is too short " << total_audio_size << "\n";
-        return -1;
-    }  
+
     int feat_size = 0;
     int frame_feat_size = handler_->get_feat_size();
     int feat_dim = frame_feat_size/sizeof(float);
@@ -172,9 +172,9 @@ int Ctc::push_states(Input* in) {
     float *input_features = (float*) feat_buff;
     int time_steps = 0;
     if (in->first){
-        if (frame_num < 4){
+        if (frame_num < 7){
             std::cerr << "the first packet is too short!\n";
-            return -1; 
+            return -2; 
         }
         if (in->last){
             time_steps = frame_num;
@@ -182,9 +182,9 @@ int Ctc::push_states(Input* in) {
             time_steps = frame_num - right_context_;
         }
     } else{
-        if (!in->last && frame_num < 1){
-            std::cerr << "the last packet is too short!\n";
-            return -1;
+        if (!in->last && frame_num < 4){
+            std::cerr << "the packet is too short!\n";
+            return -2;
         }
         if(in->last){
             time_steps = frame_num + right_context_;
@@ -198,50 +198,62 @@ int Ctc::push_states(Input* in) {
     shape_input_seq.clear();
     shape_input_seq.push_back(1);
     shape_input_seq.push_back(time_steps);
-    shape_input_seq.push_back(440);
+    shape_input_seq.push_back(num_feat_dim_);
     shape_input_seq.push_back(1);
-  
     const std::unique_ptr<Buffer<float> > &buffer_input_seq = get_buffer(_input_seq);
     if (in->first){
-        buffer_input_seq->resize(time_steps*440); 
+        buffer_input_seq->resize((time_steps + packet_padding_) * num_feat_dim_); 
+        shape_input_seq[1] += packet_padding_;
+        if (in->last){
+            buffer_input_seq->resize((time_steps + packet_padding_ + packet_padding_) * num_feat_dim_);
+            shape_input_seq[1] += packet_padding_;
+        }
         for (int i=0; i<left_context_; i++) {
             std::memcpy(one_cal_feat_buff_ + i * feat_dim_, input_features, feat_dim_ * sizeof(float));
         } 
         std::memcpy(one_cal_feat_buff_ + left_context_ * feat_dim_, input_features, (right_context_ + 1) * feat_dim_ * sizeof(float));
-        std::memcpy(buffer_input_seq->ptr() , one_cal_feat_buff_, (left_context_ + 1 + right_context_) * feat_dim_ * sizeof(float));
+	std::memset(buffer_input_seq->ptr(), 0.0, packet_padding_ * num_feat_dim_ * sizeof(float));
+        std::memcpy(buffer_input_seq->ptr() + packet_padding_ * num_feat_dim_, one_cal_feat_buff_, num_feat_dim_ * sizeof(float));
         input_features += (right_context_ + 1) * feat_dim_;
         int i=1;
         for (; i<frame_num - right_context_; i++) {
             std::memmove(one_cal_feat_buff_, one_cal_feat_buff_ + feat_dim, (left_context_ + right_context_) * feat_dim_ * sizeof(float));
             std::memcpy(one_cal_feat_buff_ + (left_context_ + right_context_) * feat_dim, input_features, feat_dim_ * sizeof(float));
-            std::memcpy(buffer_input_seq->ptr() + i * (left_context_ + right_context_ + 1) * feat_dim_, one_cal_feat_buff_, (left_context_ + 1 + right_context_) * feat_dim_ * sizeof(float)); 
+            std::memcpy(buffer_input_seq->ptr() + packet_padding_ * num_feat_dim_ + i * num_feat_dim_, one_cal_feat_buff_, num_feat_dim_ * sizeof(float)); 
             input_features += feat_dim_;
         }
         if (in->last){
             for (; i<frame_num - 1; i++){
                 std::memmove(one_cal_feat_buff_, one_cal_feat_buff_ + feat_dim, (left_context_ + right_context_) * feat_dim_ * sizeof(float));
-                std::memcpy(buffer_input_seq->ptr() + i * (left_context_ + right_context_ + 1) * feat_dim_, one_cal_feat_buff_, (left_context_ + 1 + right_context_) * feat_dim_ * sizeof(float));
+                std::memcpy(buffer_input_seq->ptr() + packet_padding_ * num_feat_dim_ + i * num_feat_dim_, one_cal_feat_buff_, num_feat_dim_ * sizeof(float));
             }
+            std::memset(buffer_input_seq->ptr() + (time_steps + packet_padding_) * num_feat_dim_, 0.0, packet_padding_ * num_feat_dim_ * sizeof(float)); 
+            
         } else{
-            std::memcpy(prefix_buff_, buffer_input_seq->ptr() + (time_steps - 8)*440, 8 * 440 * sizeof(float));
+            std::memcpy(prefix_buff_, buffer_input_seq->ptr() + (time_steps + packet_padding_ - last_packet_left_) * num_feat_dim_, last_packet_left_ * num_feat_dim_ * sizeof(float));
         }
     } else{
-        shape_input_seq[1] += 8;
-        buffer_input_seq->resize((time_steps + 8) * 440);
-        std::memcpy(buffer_input_seq->ptr(), prefix_buff_, 8 * 440 * sizeof(float));
+        shape_input_seq[1] += last_packet_left_;
+        buffer_input_seq->resize((time_steps + last_packet_left_) * num_feat_dim_);
+        if (in->last){
+            buffer_input_seq->resize((time_steps + last_packet_left_ + packet_padding_) * num_feat_dim_);
+            shape_input_seq[1] += packet_padding_;
+        }
+        std::memcpy(buffer_input_seq->ptr(), prefix_buff_, last_packet_left_ * num_feat_dim_ * sizeof(float));
         for(int i=0; i<frame_num; i++) {
             std::memmove(one_cal_feat_buff_, one_cal_feat_buff_ + feat_dim, (left_context_ + right_context_) * feat_dim_ * sizeof(float));
             std::memcpy(one_cal_feat_buff_ + (left_context_ + right_context_) * feat_dim, input_features, feat_dim_ * sizeof(float));
-            std::memcpy(buffer_input_seq->ptr() + 8 * 440 + i * (left_context_ + right_context_ + 1) * feat_dim_, one_cal_feat_buff_, (left_context_ + 1 + right_context_) * feat_dim_ * sizeof(float));
+            std::memcpy(buffer_input_seq->ptr() + last_packet_left_ * num_feat_dim_ + i * num_feat_dim_, one_cal_feat_buff_, num_feat_dim_ * sizeof(float));
             input_features += feat_dim_;
         }
         if (in->last){
             for (int i=0; i<right_context_; i++){
                 std::memmove(one_cal_feat_buff_, one_cal_feat_buff_ + feat_dim, (left_context_ + right_context_) * feat_dim_ * sizeof(float));
-                std::memcpy(buffer_input_seq->ptr() + 8 * 440 + (i + frame_num) * (left_context_ + right_context_ + 1) * feat_dim_, one_cal_feat_buff_, (left_context_ + 1 + right_context_) * feat_dim_ * sizeof(float));
+                std::memcpy(buffer_input_seq->ptr() + last_packet_left_ * num_feat_dim_ + (i + frame_num) * num_feat_dim_, one_cal_feat_buff_, num_feat_dim_ * sizeof(float));
             }
+            std::memset(buffer_input_seq->ptr() + (time_steps + last_packet_left_) * num_feat_dim_, 0.0, packet_padding_ * num_feat_dim_ * sizeof(float));
         } else{
-            std::memcpy(prefix_buff_, buffer_input_seq->ptr() + time_steps*440, 8 * 440 * sizeof(float));
+            std::memcpy(prefix_buff_, buffer_input_seq->ptr() + time_steps * num_feat_dim_, last_packet_left_ * num_feat_dim_ * sizeof(float));
         }
     }
     
@@ -328,6 +340,10 @@ int Ctc::init(const char* config) {
                 left_context_ = atoi(conf_value); 
             }else if(0 == strcmp("CONTEXT_RIGHT", conf_key)){
                 right_context_ = atoi(conf_value);
+            }else if(0 == strcmp("PACKET_PADDING", conf_key)){
+                packet_padding_ = atoi(conf_value);
+	    }else if(0 == strcmp("LAST_PACKET_LEFT", conf_key)){
+                last_packet_left_ = atoi(conf_value);
             }
         }
     }
@@ -358,8 +374,9 @@ int Ctc::init(const char* config) {
         return -1;
     }
     std::memset(repeat_audio_, 0, repeat_size_);
-    one_cal_feat_buff_ = new float[(left_context_ + right_context_ + 1)*feat_dim_];
-    prefix_buff_ = new float[8*(left_context_ + right_context_ + 1)*feat_dim_]; 
+    num_feat_dim_ = (left_context_ + right_context_ + 1) * feat_dim_;
+    one_cal_feat_buff_ = new float[num_feat_dim_];
+    prefix_buff_ = new float[last_packet_left_ * num_feat_dim_]; 
     return 0;
 }
 

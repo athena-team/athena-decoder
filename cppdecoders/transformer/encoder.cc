@@ -120,7 +120,7 @@ int Encoder::init_encoder(const char* enc_conf) {
 
     handler_ = new FeatHandler();
     if (NULL == handler_) {
-        std::cerr << "fail to new feat handler" << std::endl;
+        std::cerr << "Fail to new feat handler" << std::endl;
         return -1;
     }
 
