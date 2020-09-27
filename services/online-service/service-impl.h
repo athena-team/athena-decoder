@@ -18,6 +18,7 @@
 #include <chrono>
 #include <websocketpp/config/asio_no_tls.hpp>
 #include <websocketpp/server.hpp>
+#include <mutex>
 #include "decoder-itf.h"
 #define WS_TEXT websocketpp::frame::opcode::text
 #define WS_BINARY websocketpp::frame::opcode::binary
@@ -68,6 +69,7 @@ private:
     std::string cid;
     std::chrono::system_clock::time_point deadline;
     athena::Decoder* handler;
+    std::mutex smtx;
     ContextStatus status;
 };
 typedef std::shared_ptr<Context> ContextPtr;

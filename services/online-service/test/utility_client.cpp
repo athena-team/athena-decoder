@@ -291,6 +291,7 @@ int main() {
     while(!infile.eof()){
         if(infile>>key>>path){
             int id = endpoint.connect("ws://localhost:8080");//need time to establish connection, asynochrous
+            // sleep every 200 millisecnods to wait the connection is established
             while(endpoint.get_metadata(id)->get_status() != "Open"){
                 std::this_thread::sleep_for(std::chrono::milliseconds(200));
             }
@@ -310,6 +311,7 @@ int main() {
 
             params = "{\"opt\":\"STOP\"}";
             endpoint.send(id,params.c_str(),websocketpp::frame::opcode::text);
+            // sleep every 200 milliseconds to wait the server close the connection
             while(endpoint.get_metadata(id)->get_status() != "Closed"){
                 std::this_thread::sleep_for(std::chrono::milliseconds(200));
             }

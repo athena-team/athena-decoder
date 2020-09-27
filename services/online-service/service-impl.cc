@@ -22,6 +22,15 @@
 using json = nlohmann::json;
 
 int Context::HandleMessage(message_ptr msg){
+    if(status == CONTEXT_END){
+        LOG(INFO)<<"Receive Stop singal, ASR stop even though some message have not been processed";
+        return 0;
+    }
+    if(status == CONTEXT_CLOSED){
+        LOG(INFO)<<"Connection is closed by client, ASR stop even though some message have not been processed";
+        return 0;
+    }
+
     if(WS_TEXT==msg->get_opcode()){
         json params = json::parse(msg->get_payload());
         if("START" == params["opt"]){
@@ -96,10 +105,12 @@ int Context::CloseConnection(){
     return 0;
 }
 ContextStatus Context::GetStatus(){
+    std::lock_guard<std::mutex> lg(smtx);
     return status;
 }
 
 int Context::SetStatus(ContextStatus s){
+    std::lock_guard<std::mutex> lg(smtx);
     status = s;
     return 0;
 }

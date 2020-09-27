@@ -167,16 +167,18 @@ int ServEnv::DeleteContext(){
         std::lock_guard<std::mutex> lg(cmtx);
         auto itr = contexts.begin();
         for(;itr!=contexts.end();itr++){
-            if(itr->second->GetDeadline() < std::chrono::system_clock::now()){
-                // time out
-                itr->second->SetStatus(CONTEXT_END);
-                del_con_vec.push_back(itr->first);
-            }
+
             if(itr->second->GetStatus() == CONTEXT_CLOSED ||
                     itr->second->GetStatus() == CONTEXT_END){
                 // have be closed by client
                 del_con_vec.push_back(itr->first);
+
+            } else if(itr->second->GetDeadline() < std::chrono::system_clock::now()){
+                // time out
+                itr->second->SetStatus(CONTEXT_END);
+                del_con_vec.push_back(itr->first);
             }
+
         }
 
     }
