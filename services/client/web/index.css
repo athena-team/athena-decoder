@@ -1,0 +1,170 @@
+.service-item-taste button {
+  cursor: pointer;
+}
+
+.service-item-taste .taste-button {
+  background: #187cff;
+  border: 1px solid;
+  border-color: #478eea;
+  color: #fff;
+  text-align: center;
+  border-radius: 3px;
+}
+
+.service-item-taste .taste-header .dialect-select {
+  margin-left: 20px;
+  height: 26px;
+}
+
+.service-item-taste .taste-header .dialect {
+  margin-left: 20px;
+  height: 26px;
+  line-height: 26px;
+  display: none;
+}
+
+.service-item-taste .taste-header a {
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  height: 26px;
+  width: 100px;
+  float: right;
+  text-align: center;
+  line-height: 26px;
+}
+
+.service-item-taste .taste-content {
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-align: center;
+  align-items: center;
+  margin-top: 100px;
+}
+
+.service-item-taste .start-taste {
+  margin-top: 30px;
+  display: none;
+  -ms-flex-pack: justify;
+  justify-content: space-between;
+}
+
+.service-item-taste .start-taste .start-taste-left {
+  width: 40%;
+  margin-left: 30px;
+}
+
+.service-item-taste .start-taste .start-taste-left .time-box {
+  margin-top: 40px;
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-pack: center;
+  justify-content: center;
+}
+
+.service-item-taste .start-taste .start-taste-left .time-box .total-time {
+  margin-left: 20px;
+}
+
+.service-item-taste .start-taste .start-taste-left .time-box .start-taste-line {
+  display: inline-block;
+  margin-right: 20px;
+}
+
+.service-item-taste .start-taste .start-taste-left .time-box .start-taste-line hr {
+  background-color: #187cff;
+  width: 3px;
+  height: 10px;
+  margin: 0 5px;
+  display: inline-block;
+  border: none;
+}
+
+.service-item-taste .start-taste .start-taste-left .start-taste-button {
+  display: -ms-flexbox;
+  display: flex;
+  margin-top: 70px;
+}
+
+.service-item-taste .start-taste .output-box {
+  height: 450px;
+  overflow: auto;
+  background: #f0f0f0;
+  width: 100%;
+  line-height: 1.5;
+  padding-left: 10px;
+  padding-top: 10px;
+}
+
+.flex-display-1 {
+  display: -ms-flexbox !important;
+  display: flex !important;
+}
+
+.hr {
+  animation: note 0.2s ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+.hr1 {
+  animation-delay: -1s;
+}
+
+.hr2 {
+  animation-delay: -0.9s;
+}
+
+.hr3 {
+  animation-delay: -0.8s;
+}
+
+.hr4 {
+  animation-delay: -0.7s;
+}
+
+.hr5 {
+  animation-delay: -0.6s;
+}
+
+.hr6 {
+  animation-delay: -0.5s;
+}
+
+.hr7 {
+  animation-delay: -0.4s;
+}
+
+.hr8 {
+  animation-delay: -0.3s;
+}
+
+.hr9 {
+  animation-delay: -0.2s;
+}
+
+.hr10 {
+  animation-delay: -0.1s;
+}
+
+@keyframes note {
+  from {
+    transform: scaleY(1);
+  }
+  to {
+    transform: scaleY(4);
+  }
+}
+
+.ready-button,
+.start-button {
+  margin: 0 auto;
+  height: 40px;
+  width: 160px;
+  font-size: 16px;
+  letter-spacing: 6px;
+}
+
+.taste-button:hover {
+  background: #0b99ff;
+}
