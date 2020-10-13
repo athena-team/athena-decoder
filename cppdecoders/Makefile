@@ -6,12 +6,12 @@ all: Target
 
 Target:
 	mkdir -p lib
-	cp -f $(TF_LIB_DIR)/libtensorflow_cc.so.1.14.1 ./lib
-	cp -f $(TF_LIB_DIR)/libtensorflow_framework.so.1.14.1 ./lib
-	cd ./lib && ln -sf libtensorflow_cc.so.1.14.1 libtensorflow_cc.so.1
-	cd ./lib && ln -sf libtensorflow_cc.so.1 libtensorflow_cc.so
-	cd ./lib && ln -sf libtensorflow_framework.so.1.14.1 libtensorflow_framework.so.1
-	cd ./lib && ln -sf libtensorflow_framework.so.1 libtensorflow_framework.so
+	cp -f $(TF_LIB_DIR)/libtensorflow_cc.so.2.0.3 ./lib
+	cp -f $(TF_LIB_DIR)/libtensorflow_framework.so.2.0.3 ./lib
+	cd ./lib && ln -sf libtensorflow_cc.so.2.0.3 libtensorflow_cc.so.2
+	cd ./lib && ln -sf libtensorflow_cc.so.2 libtensorflow_cc.so
+	cd ./lib && ln -sf libtensorflow_framework.so.2.0.3 libtensorflow_framework.so.2
+	cd ./lib && ln -sf libtensorflow_framework.so.2 libtensorflow_framework.so
 	@for subdir in $(SUB_DIR);do (cd $$subdir && make) done;
 	cd ./lib && ln -sf ../ctc/libinference-ctc.so libinference-ctc.so
 	cd ./lib && ln -sf ../transformer/libinference-transformer.so libinference-transformer.so
