@@ -225,9 +225,9 @@ class WFSTDecoder:
                 if tok.cost < best_cost:
                     best_cost = tok.cost
                     best_token = tok
-                adaptive_beam = self.beam
-                beam_cutoff = best_cost + self.beam
-                return beam_cutoff, adaptive_beam, best_token
+            adaptive_beam = self.beam
+            beam_cutoff = best_cost + self.beam
+            return beam_cutoff, adaptive_beam, best_token
         else:
             tmp_array = []
             for _, tok in self.prev_toks.items():
